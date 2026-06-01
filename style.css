@@ -357,6 +357,9 @@ a { color: var(--gold); }
   padding: 2px 8px;
   font-size: .75rem;
   color: var(--gold-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .desire-row {
@@ -398,7 +401,7 @@ a { color: var(--gold); }
   vertical-align: middle;
 }
 
-.skill-name-cell { color: var(--text-muted); white-space: nowrap; font-size: .8rem; }
+.skill-name-cell { color: var(--text-muted); white-space: nowrap; font-size: .8rem; display: flex; align-items: center; gap: 5px; }
 
 .skill-input-row {
   display: flex;
@@ -456,6 +459,9 @@ a { color: var(--gold); }
   font-size: .8rem;
   color: var(--text-muted);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .tw-val {
@@ -619,6 +625,9 @@ a { color: var(--gold); }
   font-weight: 500;
   min-width: 130px;
   padding-left: 8px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .skill-cell {
@@ -626,6 +635,9 @@ a { color: var(--gold); }
   color: var(--text-muted);
   font-size: .78rem;
   min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .prio-cell {
@@ -782,4 +794,12 @@ a { color: var(--gold); }
   .task-weights-grid { grid-template-columns: 1fr; }
   .app-title { font-size: 1rem; }
   .prio-col-header { font-size: .65rem; }
+}
+
+/* ── Label icons ─────────────────────────────────────────────────────────── */
+.label-icon {
+  vertical-align: middle;
+  display: inline-block;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,.4));
 }

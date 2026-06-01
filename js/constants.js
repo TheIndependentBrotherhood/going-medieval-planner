@@ -133,6 +133,52 @@ const PRIORITY_LABELS = {
   5: '5'
 };
 
+const SKILL_ICONS = {
+  'Art':                'https://cdn-icons-png.flaticon.com/128/4401/4401807.png',
+  'Botanique':          'https://cdn-icons-png.flaticon.com/128/16887/16887846.png',
+  'Confection':         'https://cdn-icons-png.flaticon.com/128/3746/3746120.png',
+  'Construction':       'https://cdn-icons-png.flaticon.com/128/7423/7423011.png',
+  'Corps à corps':      'https://cdn-icons-png.flaticon.com/128/861/861891.png',
+  'Cuisine':            'https://cdn-icons-png.flaticon.com/128/481/481486.png',
+  'Discours':           'https://cdn-icons-png.flaticon.com/128/4726/4726351.png',
+  "Dressage d'animaux": 'https://cdn-icons-png.flaticon.com/128/18713/18713953.png',
+  'Extraction':         'https://cdn-icons-png.flaticon.com/128/1129/1129841.png',
+  'Forge':              'https://cdn-icons-png.flaticon.com/128/7709/7709428.png',
+  'Intellectuel':       'https://cdn-icons-png.flaticon.com/128/109/109827.png',
+  'Médecine':           'https://cdn-icons-png.flaticon.com/128/10476/10476412.png',
+  'Menuiserie':         'https://cdn-icons-png.flaticon.com/128/16238/16238159.png',
+  'Tireur':             'https://cdn-icons-png.flaticon.com/128/1694/1694262.png'
+};
+
+const TASK_ICONS = {
+  'Incendie':         'https://cdn-icons-png.flaticon.com/128/1633/1633308.png',
+  'Patient':          'https://cdn-icons-png.flaticon.com/128/4348/4348820.png',
+  'Soigner':          'https://cdn-icons-png.flaticon.com/128/2203/2203675.png',
+  'Convalescence':    'https://cdn-icons-png.flaticon.com/128/3488/3488909.png',
+  'Transport urgent': 'https://cdn-icons-png.flaticon.com/128/18961/18961582.png',
+  'Gardien':          'https://cdn-icons-png.flaticon.com/128/265/265876.png',
+  'Extraction':       'https://cdn-icons-png.flaticon.com/128/1129/1129841.png',
+  'Chasse':           'https://cdn-icons-png.flaticon.com/128/17395/17395714.png',
+  'Construction':     'https://cdn-icons-png.flaticon.com/128/7423/7423011.png',
+  'Pêche':            'https://cdn-icons-png.flaticon.com/128/12967/12967285.png',
+
+  'Croissance':       'https://cdn-icons-png.flaticon.com/128/2651/2651723.png',
+  'Récolte':          'https://cdn-icons-png.flaticon.com/128/4337/4337502.png',
+  'Élevage':          'https://cdn-icons-png.flaticon.com/128/2163/2163400.png',
+  'Coupe':            'https://cdn-icons-png.flaticon.com/128/3856/3856178.png',
+  'Cuisine':          'https://cdn-icons-png.flaticon.com/128/481/481486.png',
+  'Fabrication':      'https://cdn-icons-png.flaticon.com/128/3204/3204996.png',
+  'Forge':            'https://cdn-icons-png.flaticon.com/128/7709/7709428.png',
+  'Menuiserie':       'https://cdn-icons-png.flaticon.com/128/16238/16238159.png',
+  'Confection':       'https://cdn-icons-png.flaticon.com/128/3746/3746120.png',
+  'Alchimie':         'https://cdn-icons-png.flaticon.com/128/4615/4615068.png',
+  'Recherche':        'https://cdn-icons-png.flaticon.com/128/2224/2224395.png',
+  'Artiste':          'https://cdn-icons-png.flaticon.com/128/8340/8340635.png',
+  'Intendant':        'https://cdn-icons-png.flaticon.com/128/1071/1071329.png',
+  'Formation':        'https://cdn-icons-png.flaticon.com/128/7634/7634775.png',
+  'Transport':        'https://cdn-icons-png.flaticon.com/128/8820/8820735.png'
+};
+
 const COMBAT_ROLES = [
   { id: 'archer',         label: 'Archer',                   skill: 'Tireur',        defaultPct: 25 },
   { id: 'twoHanded',      label: 'Combattant 2 mains',       skill: 'Corps à corps', defaultPct: 30 },

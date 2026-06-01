@@ -7,6 +7,20 @@
 let _activeTab = 'colonists';
 let _editingId = null; // colonist being edited in modal
 
+// ── Icon helpers ──────────────────────────────────────────────────────────────
+
+function skillIcon(skill, size = 18) {
+  const url = SKILL_ICONS[skill];
+  if (!url) return '';
+  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+}
+
+function taskIcon(task, size = 18) {
+  const url = TASK_ICONS[task];
+  if (!url) return '';
+  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -165,7 +179,7 @@ function renderColonyTab() {
       <div class="task-weights-grid">
         ${TASKS.map(t => `
           <div class="tw-row">
-            <span class="tw-name">${esc(t)}</span>
+            <span class="tw-name">${taskIcon(t)}${esc(t)}</span>
             <input type="range" min="1" max="5" value="${c.taskWeights[t] || 3}" class="slider"
               oninput="updateTaskWeight('${t}', this.value)">
             <span class="tw-val" id="tw-val-${slugify(t)}">${c.taskWeights[t] || 3}</span>
@@ -220,7 +234,7 @@ function renderColonistCard(colonist) {
   const topSkills = [...SKILLS]
     .sort((a, b) => colonist.skills[b] - colonist.skills[a])
     .slice(0, 3)
-    .map(s => `<span class="skill-pill">${esc(s)}&nbsp;${colonist.skills[s]}</span>`)
+    .map(s => `<span class="skill-pill">${skillIcon(s)}${esc(s)} ${colonist.skills[s]}</span>`)
     .join('');
 
   const desireRow = SKILLS.map(s => {
@@ -272,7 +286,7 @@ function openColonistModal(id) {
     const slug = slugify(s);
     return `
       <tr>
-        <td class="skill-name-cell">${esc(s)}</td>
+        <td class="skill-name-cell">${skillIcon(s)}${esc(s)}</td>
         <td>
           <div class="skill-input-row">
             <input type="range" min="0" max="50" value="${c.skills[s]}" class="slider" id="skill-${slug}"
@@ -472,8 +486,12 @@ function renderPrioritiesTab() {
 
     return `
       <tr>
-        <td class="task-name-cell">${esc(task)}</td>
-        <td class="skill-cell">${esc(skill)}</td>
+        <td class="task-name-cell">${taskIcon(task)}${esc(task)}</td>
+        <td class="skill-cell">${task === 'Formation'
+          ? `${skillIcon('Tireur')}Tireur + ${skillIcon('Corps à corps')}Corps à corps`
+          : TASK_SKILLS[task]
+            ? `${skillIcon(TASK_SKILLS[task])}${esc(skill)}`
+            : esc(skill)}</td>
         ${cells}
       </tr>`;
   }).join('');
@@ -540,7 +558,7 @@ function renderSummaryTab() {
 
     return `
       <tr>
-        <td class="task-name-cell">${esc(task)}</td>
+        <td class="task-name-cell">${taskIcon(task)}${esc(task)}</td>
         <td>${assigned || '<em>Tous interdits</em>'}</td>
         <td>${forbidden || '—'}</td>
       </tr>`;
