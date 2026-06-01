@@ -179,7 +179,7 @@ function renderColonyTab() {
       <div class="task-weights-grid">
         ${TASKS.map(t => `
           <div class="tw-row">
-            <span class="tw-name">${taskIcon(t)}&nbsp;${esc(t)}</span>
+            <span class="tw-name">${taskIcon(t)}${esc(t)}</span>
             <input type="range" min="1" max="5" value="${c.taskWeights[t] || 3}" class="slider"
               oninput="updateTaskWeight('${t}', this.value)">
             <span class="tw-val" id="tw-val-${slugify(t)}">${c.taskWeights[t] || 3}</span>
