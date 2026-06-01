@@ -486,7 +486,7 @@ function renderPrioritiesTab() {
 
     return `
       <tr>
-        <td class="task-name-cell">${taskIcon(task)}&nbsp;${esc(task)}</td>
+        <td class="task-name-cell">${taskIcon(task)}${esc(task)}</td>
         <td class="skill-cell">${task === 'Formation'
           ? `${skillIcon('Tireur')}&nbsp;Tireur + ${skillIcon('Corps à corps')}&nbsp;Corps à corps`
           : TASK_SKILLS[task]
