@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Going Medieval Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Header ─────────────────────────────────────────────────────────── -->
+    <header id="app-header">
+      <div class="header-brand">
+        <span class="app-title">🏰 Going Medieval Planner</span>
+        <span id="colony-name">—</span>
+        <span id="colonist-count"></span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-saves" class="btn btn-secondary">💾 Sauvegardes</button>
+        <button id="btn-new-colony" class="btn btn-primary">+ Nouvelle colonie</button>
+      </div>
+    </header>
+
+    <!-- ── Tab navigation ─────────────────────────────────────────────────── -->
+    <nav id="tab-nav">
+      <button class="tab-btn active" data-tab="colonists">👥 Colons</button>
+      <button class="tab-btn" data-tab="colony">⚙️ Paramètres</button>
+      <button class="tab-btn" data-tab="combat">⚔️ Combat</button>
+      <button class="tab-btn" data-tab="schedules">📅 Plannings</button>
+      <button class="tab-btn" data-tab="priorities">📋 Priorités</button>
+      <button class="tab-btn" data-tab="summary">📊 Résumé</button>
+    </nav>
+
+    <!-- ── Tab content ────────────────────────────────────────────────────── -->
+    <main id="tab-content">
+      <!-- Rendered dynamically by app.js -->
+    </main>
+
+  </div><!-- #app -->
+
+  <!-- ── Modal overlay ──────────────────────────────────────────────────── -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-content"></div>
+  </div>
+
+  <!-- ── Scripts (order matters) ──────────────────────────────────────────── -->
+  <script src="js/constants.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
