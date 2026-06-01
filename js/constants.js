@@ -157,9 +157,11 @@ const TASK_ICONS = {
   'Convalescence':    'https://cdn-icons-png.flaticon.com/128/3488/3488909.png',
   'Transport urgent': 'https://cdn-icons-png.flaticon.com/128/18961/18961582.png',
   'Gardien':          'https://cdn-icons-png.flaticon.com/128/265/265876.png',
+  'Extraction':       'https://cdn-icons-png.flaticon.com/128/1129/1129841.png',
   'Chasse':           'https://cdn-icons-png.flaticon.com/128/17395/17395714.png',
   'Construction':     'https://cdn-icons-png.flaticon.com/128/7423/7423011.png',
   'Pêche':            'https://cdn-icons-png.flaticon.com/128/12967/12967285.png',
+
   'Croissance':       'https://cdn-icons-png.flaticon.com/128/2651/2651723.png',
   'Récolte':          'https://cdn-icons-png.flaticon.com/128/4337/4337502.png',
   'Élevage':          'https://cdn-icons-png.flaticon.com/128/2163/2163400.png',
