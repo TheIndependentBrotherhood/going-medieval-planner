@@ -286,7 +286,7 @@ function openColonistModal(id) {
     const slug = slugify(s);
     return `
       <tr>
-        <td class="skill-name-cell">${skillIcon(s)}&nbsp;${esc(s)}</td>
+        <td class="skill-name-cell">${skillIcon(s)}${esc(s)}</td>
         <td>
           <div class="skill-input-row">
             <input type="range" min="0" max="50" value="${c.skills[s]}" class="slider" id="skill-${slug}"
