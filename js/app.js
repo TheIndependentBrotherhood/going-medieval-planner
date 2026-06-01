@@ -558,7 +558,7 @@ function renderSummaryTab() {
 
     return `
       <tr>
-        <td class="task-name-cell">${taskIcon(task)}&nbsp;${esc(task)}</td>
+        <td class="task-name-cell">${taskIcon(task)}${esc(task)}</td>
         <td>${assigned || '<em>Tous interdits</em>'}</td>
         <td>${forbidden || '—'}</td>
       </tr>`;
