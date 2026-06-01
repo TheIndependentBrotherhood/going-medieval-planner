@@ -90,11 +90,11 @@ const SCHEDULE_STATE_LABELS = {
   F: 'Fonctions de rôle'
 };
 const SCHEDULE_STATE_COLORS = {
-  T: '#2d5a27',
-  S: '#1a2f4a',
-  N: '#3a3a3a',
-  L: '#7c4a00',
-  F: '#4a1070'
+  T: '#7c3d00',  // Travail    – orange
+  S: '#1a3a6e',  // Sommeil    – bleu
+  N: '#3a3a3a',  // N'importe  – gris
+  L: '#6b5c00',  // Loisirs    – jaune
+  F: '#1a5a2a'   // Fonctions de rôle – vert
 };
 
 const DEFAULT_SCHEDULE_A = ['S','S','S','T','T','T','T','S','S','S','S','L','L','N','N','N','N','T','T','T','T','L','L','S'];
