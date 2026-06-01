@@ -12,7 +12,7 @@ let _editingId = null; // colonist being edited in modal
 function skillIcon(skill, size = 18) {
   const url = SKILL_ICONS[skill];
   if (!url) return '';
-  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon">`;
+  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
 function taskIcon(task, size = 18) {
