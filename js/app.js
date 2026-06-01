@@ -18,7 +18,7 @@ function skillIcon(skill, size = 18) {
 function taskIcon(task, size = 18) {
   const url = TASK_ICONS[task];
   if (!url) return '';
-  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon">`;
+  return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
