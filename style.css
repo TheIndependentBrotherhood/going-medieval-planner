@@ -521,7 +521,7 @@ a { color: var(--gold); }
   border-radius: 12px;
   padding: 2px 8px;
   font-size: .72rem;
-  color: #15803d;
+  color: var(--success);
 }
 
 /* ── Schedule table ──────────────────────────────────────────────────────── */
