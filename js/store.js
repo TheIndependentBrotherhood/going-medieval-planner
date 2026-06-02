@@ -15,22 +15,15 @@ function deepClone(obj) {
 
 // ── Default builders ──────────────────────────────────────────────────────────
 
-function defaultTaskWeights() {
+/**
+ * Default task distribution: for each task, start with a neutral (all-zero)
+ * distribution. Actual counts are initialized/adjusted based on colonist count
+ * via adjustTaskDistributionsForColonistCountChange().
+ */
+function defaultTaskDistribution() {
   const w = {};
-  TASKS.forEach(t => { w[t] = 3; });
+  TASKS.forEach(t => { w[t] = { high: 0, mid: 0, low: 0 }; });
   return w;
-}
-
-function defaultPrioLimits() {
-  const n    = TASKS.length; // 25
-  const base = Math.floor(n / 4);
-  const rem  = n - base * 4;
-  return {
-    1: base + (rem > 0 ? 1 : 0),
-    2: base + (rem > 1 ? 1 : 0),
-    3: base + (rem > 2 ? 1 : 0),
-    4: base
-  };
 }
 
 function defaultColonist(name = 'Nouveau colon') {
@@ -69,14 +62,12 @@ function defaultColony(name = 'Ma Colonie') {
       A: [...DEFAULT_SCHEDULE_A],
       B: [...DEFAULT_SCHEDULE_B]
     },
-    taskWeights:            defaultTaskWeights(),
+    taskDistribution:       defaultTaskDistribution(),
     calculationMethod:      'combined',
     methodWeights:          { desire: 40, expertise: 40, learning: 20 },
     negativeDesireMode:     'forbid',  // 'forbid' | 'lowest'
     negativeDesirePrio:     5,
     positiveDesireBonus:    true,
-    // Nombre max de tâches à chaque niveau de priorité par colon (somme = nb de tâches non forcées)
-    maxTasksPerPrioPerColonist: defaultPrioLimits(),
     // Priorité forcée par tâche (tous les colons sans envie négative reçoivent cette priorité)
     taskForcedPriority:     {}
   };
@@ -101,15 +92,24 @@ const Store = (() => {
 
     _active = localStorage.getItem(ACTIVE_KEY) || null;
 
-    // Migrate old maxColonistsPerTaskPct to new maxTasksPerPrioPerColonist
+    // Migrate old data model to new taskDistribution
     Object.values(_saves).forEach(colony => {
-      if (!colony.maxTasksPerPrioPerColonist || typeof colony.maxTasksPerPrioPerColonist !== 'object') {
-        colony.maxTasksPerPrioPerColonist = defaultPrioLimits();
+      const n = Array.isArray(colony.colonists) ? colony.colonists.length : 0;
+      if (!colony.taskDistribution || typeof colony.taskDistribution !== 'object') {
+        colony.taskDistribution = defaultTaskDistribution();
+        // Initialize each task with all colonists in the mid band (prio 3)
+        TASKS.forEach(t => { colony.taskDistribution[t] = { high: 0, mid: n, low: 0 }; });
       }
+      // Ensure every task has an entry (e.g. if new tasks were added)
+      TASKS.forEach(t => {
+        if (!colony.taskDistribution[t]) colony.taskDistribution[t] = { high: 0, mid: n, low: 0 };
+      });
       if (!colony.taskForcedPriority || typeof colony.taskForcedPriority !== 'object') {
         colony.taskForcedPriority = {};
       }
-      // Remove old field
+      // Remove old fields
+      delete colony.taskWeights;
+      delete colony.maxTasksPerPrioPerColonist;
       delete colony.maxColonistsPerTaskPct;
     });
 

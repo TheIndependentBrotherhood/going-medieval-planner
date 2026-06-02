@@ -494,35 +494,77 @@ a { color: var(--gold); }
   margin-bottom: 12px;
 }
 
-/* ── Task weights ─────────────────────────────────────────────────────────── */
+/* ── Task distribution ─────────────────────────────────────────────────────── */
 .task-weights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
 }
 
 .tw-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
   background: var(--surface);
-  padding: 6px 10px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   border: 1px solid var(--border);
+  gap: 6px;
 }
 
 .tw-row-forced {
   border-color: var(--gold);
 }
 
+.tw-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .tw-name {
-  min-width: 110px;
-  font-size: .8rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
+  flex: 1;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text);
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+.force-prio-lock {
+  font-size: .95rem;
+  line-height: 1;
+}
+
+.force-prio-select {
+  flex-shrink: 0;
+  width: 56px;
+  border-radius: 4px;
+  transition: background .2s, color .2s;
+}
+
+.tw-bands {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tw-bands-disabled {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.band-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-label {
+  min-width: 110px;
+  font-size: .78rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .tw-val {
@@ -531,11 +573,6 @@ a { color: var(--gold); }
   color: var(--gold-light);
   font-weight: 700;
   font-size: .875rem;
-}
-
-.force-prio-select {
-  flex-shrink: 0;
-  width: 52px;
 }
 
 /* ── Combat roles ─────────────────────────────────────────────────────────── */
