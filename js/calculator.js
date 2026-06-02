@@ -178,6 +178,10 @@ function recalculatePriorities(colony) {
   const method   = colony.calculationMethod;
   const weights  = colony.methodWeights;
   const colonists = colony.colonists;
+  const n        = colonists.length;
+  // % max de colons pouvant avoir priorité 1 par tâche (100 = pas de limite)
+  const maxPct   = colony.maxColonistsPerTaskPct ?? 100;
+  const maxAtPrio1 = Math.max(1, Math.ceil(n * maxPct / 100));
 
   TASKS.forEach(task => {
     // Pre-compute expertise + learning maps for this task (colony-wide)
@@ -221,6 +225,33 @@ function recalculatePriorities(colony) {
 
       colonist.taskPriorities[task] = priority;
     });
+
+    // Cap: au plus maxAtPrio1 colons peuvent avoir priorité 1 par tâche.
+    // En cas de dépassement, on garde les meilleurs (par compétence liée) à 1
+    // et on élève les autres à 2.
+    if (maxPct < 100) {
+      const atPrio1 = colonists.filter(
+        c => !c.manualOverrides[task] && c.taskPriorities[task] === 1
+      );
+      if (atPrio1.length > maxAtPrio1) {
+        // Score par compétence primaire pour décider qui garde la priorité 1
+        const scored = atPrio1.map(c => {
+          let score;
+          if (task === 'Formation') {
+            score = avgSkill(c, FORMATION_SKILLS);
+          } else {
+            const skill = TASK_SKILLS[task];
+            score = skill ? (c.skills[skill] || 0) : 0;
+          }
+          return { c, score };
+        });
+        // Tri décroissant : les meilleurs restent à priorité 1
+        scored.sort((a, b) => b.score - a.score);
+        scored.slice(maxAtPrio1).forEach(({ c }) => {
+          c.taskPriorities[task] = 2;
+        });
+      }
+    }
   });
 }
 
