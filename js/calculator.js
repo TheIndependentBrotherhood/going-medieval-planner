@@ -4,6 +4,13 @@
  * Calculator — computes task priorities for every colonist in the active colony.
  *
  * Priority scale : 0 = forbidden, 1 = highest, 5 = lowest.
+ *
+ * Each task has a target distribution { high, mid, low } where:
+ *   - high  colonists get priority 1 or 2 (best performers for the task)
+ *   - mid   colonists get priority 3
+ *   - low   colonists get priority 4 or 5 (worst performers)
+ * Colonists are ranked by a blended desire/expertise/learning score, then
+ * placed in bands according to that distribution.
  */
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -35,7 +42,6 @@ function rankDesc(colonists, valueFn) {
  */
 function rankToPriority(rank, total) {
   if (total <= 1) return 1;
-  // Map rank [0, total-1] → priority [1, 5]
   return Math.round(1 + (rank / (total - 1)) * 4);
 }
 
@@ -50,6 +56,15 @@ function formationDesire(colonist) {
   const d1 = colonist.desires['Tireur'] || 0;
   const d2 = colonist.desires['Corps à corps'] || 0;
   return Math.max(d1, d2);
+}
+
+/**
+ * Map a 0-indexed position within a band to the priority range [prioMin, prioMax].
+ * Distributes as evenly as possible (bottom-heavy within band).
+ */
+function bandToPrio(idx, bandSize, prioMin, prioMax) {
+  if (prioMin === prioMax || bandSize <= 1) return prioMin;
+  return Math.min(prioMax, Math.round(prioMin + (idx / (bandSize - 1)) * (prioMax - prioMin)));
 }
 
 // ── Per-method calculators ────────────────────────────────────────────────────
@@ -85,7 +100,6 @@ function calcByExpertise(colony, task) {
   } else {
     const skill = TASK_SKILLS[task];
     if (!skill) {
-      // No skill → all get neutral
       const result = {};
       colonists.forEach(c => { result[c.id] = 3; });
       return result;
@@ -123,9 +137,6 @@ function calcByLearning(colony, task) {
     getLevel = c => c.skills[skill] || 0;
   }
 
-  const levels   = colonists.map(getLevel);
-  const avg      = levels.reduce((a, b) => a + b, 0) / (n || 1);
-  // Rank ascending (lowest skill = wants to learn most → best prio = lower number)
   const scored   = colonists.map(c => ({ id: c.id, val: getLevel(c) }));
   scored.sort((a, b) => a.val - b.val); // ascending = below avg first
 
@@ -143,7 +154,6 @@ function calcByLearning(colony, task) {
  * Never overrides 0 (forbidden) coming from a negative desire.
  */
 function blendPriorities(desire, expertise, learning, weights) {
-  // If desire method says forbidden (0), respect it
   if (desire === 0) return 0;
 
   const { desire: wd, expertise: we, learning: wl } = weights;
@@ -152,18 +162,36 @@ function blendPriorities(desire, expertise, learning, weights) {
   return Math.min(5, Math.max(1, Math.round(blended)));
 }
 
-// ── Task-weight adjustment ────────────────────────────────────────────────────
+// ── Scoring ───────────────────────────────────────────────────────────────────
 
 /**
- * Shift a priority by task importance weight (1..5 → high weight = shift toward 1).
- * taskWeight is 1 (critical) … 5 (unimportant).
+ * Compute a raw score for a colonist on a task (higher = better colonist for the task).
+ * Returns -Infinity for forbidden colonists.
  */
-function applyTaskWeight(priority, taskWeight) {
-  if (priority === 0) return 0; // forbidden stays forbidden
-  // Center weight is 3; shift priority by (3 - taskWeight)
-  const shift  = 3 - taskWeight;  // negative = push up (more important), positive = push down
-  const result = priority - shift; // subtract shift to move priority toward 1 if important
-  return Math.min(5, Math.max(1, Math.round(result)));
+function colonistScore(colony, colonist, task, expertiseMap, learningMap) {
+  const method  = colony.calculationMethod;
+  const weights = colony.methodWeights;
+
+  const desirePrio = calcByDesire(colony, colonist, task);
+  if (desirePrio === 0) return -Infinity; // forbidden
+
+  const desireScore = 6 - desirePrio; // prio 1 → score 5, prio 3 → score 3, prio 5 → score 1
+
+  if (method === 'desire') return desireScore;
+
+  const expPrio = expertiseMap[colonist.id] ?? 3;
+  const expScore = 6 - expPrio;
+
+  const lrnPrio = learningMap[colonist.id] ?? 3;
+  const lrnScore = 6 - lrnPrio;
+
+  if (method === 'expertise') return expScore;
+  if (method === 'learning')  return lrnScore;
+
+  // combined
+  const { desire: wd, expertise: we, learning: wl } = weights;
+  const total = wd + we + wl || 1;
+  return (desireScore * wd + expScore * we + lrnScore * wl) / total;
 }
 
 // ── Main entry point ──────────────────────────────────────────────────────────
@@ -172,92 +200,81 @@ function applyTaskWeight(priority, taskWeight) {
  * Recalculate task priorities for all colonists in the active colony.
  * Only updates tasks that are NOT manually overridden.
  *
+ * For each task, colonists are ranked by their blended score and placed
+ * in three priority bands according to the task's target distribution:
+ *   high  → priority 1–2   (best performers)
+ *   mid   → priority 3
+ *   low   → priority 4–5   (worst performers)
+ *
  * @param {object} colony - the full colony object
  */
 function recalculatePriorities(colony) {
-  const method    = colony.calculationMethod;
-  const weights   = colony.methodWeights;
-  const colonists = colony.colonists;
-  const forcedPrio = colony.taskForcedPriority || {};
-  const limits    = colony.maxTasksPerPrioPerColonist || { 1: 7, 2: 6, 3: 6, 4: 6 };
-
-  // ── Step 1: Assign base priorities for all tasks × colonists ─────────────────
+  const colonists   = colony.colonists;
+  const forcedPrio  = colony.taskForcedPriority || {};
+  const taskDist    = colony.taskDistribution || {};
 
   TASKS.forEach(task => {
+    const isForced    = forcedPrio[task] != null;
     const expertiseMap = calcByExpertise(colony, task);
     const learningMap  = calcByLearning(colony, task);
-    const taskWeight   = colony.taskWeights[task] || 3;
-    const isForced     = forcedPrio[task] != null;
 
-    colonists.forEach(colonist => {
-      if (colonist.manualOverrides[task]) return;
+    // ── Forced priority: everyone (except forbidden) gets the forced value ──
+    if (isForced) {
+      colonists.forEach(colonist => {
+        if (colonist.manualOverrides[task]) return;
+        if (ARCHER_ONLY_TASKS.includes(task) && colonist.combatRole !== 'archer') {
+          colonist.taskPriorities[task] = 0;
+          return;
+        }
+        const desirePrio = calcByDesire(colony, colonist, task);
+        colonist.taskPriorities[task] = desirePrio === 0 ? 0 : forcedPrio[task];
+      });
+      return;
+    }
+
+    // ── Score every non-manual colonist ────────────────────────────────────
+    const entries = colonists.map(colonist => {
+      if (colonist.manualOverrides[task]) return { colonist, manual: true, score: 0 };
 
       // Archer-only tasks: forbidden for non-archers
       if (ARCHER_ONLY_TASKS.includes(task) && colonist.combatRole !== 'archer') {
-        colonist.taskPriorities[task] = 0;
-        return;
+        return { colonist, manual: false, score: -Infinity };
       }
 
-      let priority;
-
-      if (isForced) {
-        // Respect negative desires (forbidden stays forbidden); otherwise apply forced priority
-        const desirePrio = calcByDesire(colony, colonist, task);
-        priority = desirePrio === 0 ? 0 : forcedPrio[task];
-      } else if (method === 'desire') {
-        priority = calcByDesire(colony, colonist, task);
-        priority = applyTaskWeight(priority, taskWeight);
-      } else if (method === 'expertise') {
-        const exp = expertiseMap[colonist.id] ?? 3;
-        const d   = calcByDesire(colony, colonist, task);
-        priority  = applyTaskWeight(d === 0 ? 0 : exp, taskWeight);
-      } else if (method === 'learning') {
-        const lrn = learningMap[colonist.id] ?? 3;
-        const d   = calcByDesire(colony, colonist, task);
-        priority  = applyTaskWeight(d === 0 ? 0 : lrn, taskWeight);
-      } else {
-        // combined
-        const d   = calcByDesire(colony, colonist, task);
-        const exp = expertiseMap[colonist.id] ?? 3;
-        const lrn = learningMap[colonist.id] ?? 3;
-        priority  = applyTaskWeight(blendPriorities(d, exp, lrn, weights), taskWeight);
-      }
-
-      colonist.taskPriorities[task] = priority;
+      const score = colonistScore(colony, colonist, task, expertiseMap, learningMap);
+      return { colonist, manual: false, score };
     });
-  });
 
-  // ── Step 2: Per-colonist priority cap with cascade ────────────────────────────
-  // For each colonist, count tasks at each priority level (excluding forced tasks,
-  // manual overrides, and forbidden tasks). If count exceeds the limit, bump the
-  // least important excess tasks to the next priority level.
+    // Apply forbidden (score === -Infinity)
+    entries.forEach(({ colonist, manual, score }) => {
+      if (!manual && score === -Infinity) colonist.taskPriorities[task] = 0;
+    });
 
-  colonists.forEach(colonist => {
-    for (let prio = 1; prio <= 4; prio++) {
-      const limit = limits[prio] ?? 99;
-      // Collect eligible tasks: non-forced, non-manual-override, non-forbidden, at this prio
-      const eligible = TASKS.filter(t =>
-        !colonist.manualOverrides[t] &&
-        forcedPrio[t] == null &&
-        colonist.taskPriorities[t] === prio
-      );
-      if (eligible.length <= limit) continue;
+    // Rank the eligible (non-forbidden, non-manual) colonists by score desc
+    const rankable = entries
+      .filter(e => !e.manual && e.score !== -Infinity)
+      .sort((a, b) => b.score - a.score);
 
-      // Sort by taskWeight DESC (least important first), then skill ASC (weakest first)
-      const scored = eligible.map(t => {
-        const skill = TASK_SKILLS[t];
-        const skillLevel = (t === 'Formation')
-          ? avgSkill(colonist, FORMATION_SKILLS)
-          : (skill ? (colonist.skills[skill] || 0) : 0);
-        return { t, tw: colony.taskWeights[t] || 3, skillLevel };
-      });
-      scored.sort((a, b) => b.tw - a.tw || a.skillLevel - b.skillLevel);
+    // ── Apply band distribution ─────────────────────────────────────────────
+    const raw    = taskDist[task] || { high: 0, mid: rankable.length, low: 0 };
+    const avail  = rankable.length;
+    const high   = Math.min(raw.high || 0, avail);
+    const mid    = Math.min(raw.mid  || 0, avail - high);
+    // Everyone beyond high+mid falls in the low band
 
-      // Bump excess tasks to next priority level
-      scored.slice(limit).forEach(({ t }) => {
-        colonist.taskPriorities[t] = prio + 1; // max prio is 5, so prio+1 ≤ 5
-      });
-    }
+    rankable.forEach((entry, i) => {
+      let prio;
+      if (i < high) {
+        prio = bandToPrio(i, high, 1, 2);
+      } else if (i < high + mid) {
+        prio = 3;
+      } else {
+        const lowIdx   = i - high - mid;
+        const lowCount = avail - high - mid;
+        prio = bandToPrio(lowIdx, lowCount, 4, 5);
+      }
+      entry.colonist.taskPriorities[task] = prio;
+    });
   });
 }
 
@@ -274,7 +291,6 @@ function assignCombatRoles(colony) {
 
   const pcts = colony.combatRolePercents;
 
-  // Calculate how many colonists per role (rounded, must sum to n)
   const raw = {
     archer:          (pcts.archer          / 100) * n,
     twoHanded:       (pcts.twoHanded       / 100) * n,
@@ -282,7 +298,6 @@ function assignCombatRoles(colony) {
     oneHandedShield: (pcts.oneHandedShield / 100) * n
   };
 
-  // Round and fix remainder
   const counts = {};
   let total = 0;
   COMBAT_ROLES.forEach(r => {
@@ -290,23 +305,19 @@ function assignCombatRoles(colony) {
     total += counts[r.id];
   });
 
-  // Adjust rounding errors on the biggest group
   const diff = n - total;
   if (diff !== 0) {
     const largest = COMBAT_ROLES.reduce((a, b) => counts[a.id] > counts[b.id] ? a : b);
     counts[largest.id] += diff;
   }
 
-  // Score colonists for each role
   function score(colonist, roleId) {
     const role   = COMBAT_ROLES.find(r => r.id === roleId);
     const skill  = colonist.skills[role.skill] || 0;
     const desire = colonist.desires[role.skill] || 0;
-    // Archers also need positive Tireur desire; melee need Corps à corps
-    return skill + desire * 5; // desire is more important than raw skill
+    return skill + desire * 5;
   }
 
-  // Greedy assignment: archers first (because Chasse depends on it)
   const assigned = new Set();
   const result   = {};
 
@@ -331,15 +342,7 @@ function assignCombatRoles(colony) {
 
 /**
  * Automatically distribute colonists between schedules A and B so that both
- * groups have a homogeneous skill profile and the player experiences minimal
- * downtime (each schedule always has capable colonists covering every major task).
- *
- * Strategy: greedy skill-balancing.
- *   1. Rank colonists by total skill (descending).
- *   2. For each colonist (strongest first), assign to the schedule whose
- *      current accumulated skill total is the lowest.
- * This produces two groups with nearly equal overall skill and a balanced
- * spread of specialists, so both work shifts are always productive.
+ * groups have a homogeneous skill profile.
  *
  * @param {object} colony - the full colony object (mutates colonist.schedule)
  */
@@ -351,7 +354,6 @@ function autoAssignSchedules(colony) {
     return SKILLS.reduce((sum, s) => sum + (c.skills[s] || 0), 0);
   }
 
-  // Sort descending so the strongest colonist is distributed first
   const withTotals = colonists
     .map(c => ({ c, ts: totalSkill(c) }))
     .sort((a, b) => b.ts - a.ts);
@@ -374,7 +376,6 @@ function autoAssignSchedules(colony) {
 
 /**
  * Check if any two colonists share at least one L or N slot across their schedules.
- * Returns false if there are no common social slots (warning case).
  */
 function hasCommonLeisure(colony) {
   const colonists = colony.colonists;
@@ -394,3 +395,4 @@ function hasCommonLeisure(colony) {
   }
   return false;
 }
+

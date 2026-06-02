@@ -46,6 +46,39 @@ const TASKS = [
   'Transport'
 ];
 
+// Tasks that train a specific skill (ordered by in-game priority)
+const QUALIFYING_TASKS = [
+  'Soigner',
+  'Extraction',
+  'Chasse',
+  'Construction',
+  'Pêche',
+  'Croissance',
+  'Récolte',
+  'Élevage',
+  'Coupe',
+  'Cuisine',
+  'Forge',
+  'Menuiserie',
+  'Confection',
+  'Alchimie',
+  'Recherche',
+  'Artiste'
+];
+
+// Tasks with no associated skill
+const NON_QUALIFYING_TASKS = [
+  'Incendie',
+  'Patient',
+  'Convalescence',
+  'Transport urgent',
+  'Gardien',
+  'Fabrication',
+  'Intendant',
+  'Formation',
+  'Transport'
+];
+
 // Primary skill for each task (null = no specific skill required)
 const TASK_SKILLS = {
   'Incendie':         null,
