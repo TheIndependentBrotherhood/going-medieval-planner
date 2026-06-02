@@ -370,6 +370,49 @@ a { color: var(--gold); }
   font-family: monospace;
 }
 
+/* ── Skill grid badge ────────────────────────────────────────────────────── */
+.skill-grid-badge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.skill-grid-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 18px;
+}
+
+.skill-grid-lvl {
+  font-size: .65rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: monospace;
+}
+
+/* ── Desire badge ────────────────────────────────────────────────────────── */
+.desire-badge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: default;
+  align-self: flex-start;
+}
+
+.desire-badge-icon { display: inline-flex; align-items: center; }
+.desire-badge-emoji { font-size: 1.05rem; }
+.desire-badge-label { color: var(--text-muted); font-size: .7rem; }
+
 .card-actions {
   display: flex;
   gap: 6px;
