@@ -204,7 +204,11 @@ function saveColonyName() {
 }
 
 function toggleWeightLock(key) {
-  _lockedWeights[key] = !_lockedWeights[key];
+  // Radio behaviour: at most one slider locked at a time.
+  // Clicking the already-locked slider unlocks it; clicking another unlocks the old one first.
+  const wasLocked = _lockedWeights[key];
+  Object.keys(_lockedWeights).forEach(k => { _lockedWeights[k] = false; });
+  if (!wasLocked) _lockedWeights[key] = true;
   // Re-render weight section to reflect lock state
   const c = Store.current();
   const section = document.getElementById('method-weights-section');
