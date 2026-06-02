@@ -90,11 +90,11 @@ const SCHEDULE_STATE_LABELS = {
   F: 'Fonctions de rôle'
 };
 const SCHEDULE_STATE_COLORS = {
-  T: '#7c3d00',  // Travail    – orange
-  S: '#1a3a6e',  // Sommeil    – bleu
-  N: '#3a3a3a',  // N'importe  – gris
-  L: '#6b5c00',  // Loisirs    – jaune
-  F: '#1a5a2a'   // Fonctions de rôle – vert
+  T: '#c2570a',  // Travail    – orange
+  S: '#1d4ed8',  // Sommeil    – bleu
+  N: '#6b7280',  // N'importe  – gris
+  L: '#b45309',  // Loisirs    – ambre
+  F: '#16a34a'   // Fonctions de rôle – vert
 };
 
 const DEFAULT_SCHEDULE_A = ['S','S','S','T','T','T','T','S','S','S','S','L','L','N','N','N','N','T','T','T','T','L','L','S'];
@@ -116,12 +116,12 @@ const CALC_METHODS = [
 ];
 
 const PRIORITY_COLORS = {
-  0: '#7f1d1d',  // forbidden – deep red
-  1: '#14532d',  // top prio  – deep green
-  2: '#166534',  // prio 2    – green
-  3: '#713f12',  // prio 3    – amber
-  4: '#7c2d12',  // prio 4    – orange
-  5: '#374151'   // lowest    – gray
+  0: '#dc2626',  // forbidden – rouge vif
+  1: '#16a34a',  // priorité 1 – vert vif
+  2: '#059669',  // priorité 2 – vert émeraude
+  3: '#d97706',  // priorité 3 – ambre
+  4: '#ea580c',  // priorité 4 – orange
+  5: '#6b7280'   // priorité 5 – gris
 };
 
 const PRIORITY_LABELS = {
