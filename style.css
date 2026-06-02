@@ -304,9 +304,9 @@ a { color: var(--gold); }
   font-weight: 600;
 }
 
-.badge-schedule { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.badge-schedule { background: #dcfce7; color: var(--success); border: 1px solid #86efac; }
 .badge-role     { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
-.badge-active   { background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 12px; font-size: .75rem; }
+.badge-active   { background: #dcfce7; color: var(--success); padding: 2px 8px; border-radius: 12px; font-size: .75rem; }
 
 /* ── Colonist grid ───────────────────────────────────────────────────────── */
 .colonist-grid {
