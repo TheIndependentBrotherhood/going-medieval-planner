@@ -552,7 +552,7 @@ function updateTaskForcedPriority(task, val) {
 
   Store.updateColony({ taskForcedPriority: forced });
 
-  // Re-render distribution section (row reflects forced/unfored state)
+  // Re-render distribution section (row reflects forced/unforced state)
   const wrapper = document.getElementById('task-dist-wrapper');
   if (wrapper) wrapper.innerHTML = renderTaskDistributionSection(Store.current());
 }
