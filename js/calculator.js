@@ -60,7 +60,7 @@ function formationDesire(colonist) {
 
 /**
  * Map a 0-indexed position within a band to the priority range [prioMin, prioMax].
- * Distributes as evenly as possible (bottom-heavy within band).
+ * Distributes as evenly as possible within the band.
  */
 function bandToPrio(idx, bandSize, prioMin, prioMax) {
   if (prioMin === prioMax || bandSize <= 1) return prioMin;
