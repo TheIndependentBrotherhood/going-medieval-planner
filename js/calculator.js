@@ -175,25 +175,24 @@ function applyTaskWeight(priority, taskWeight) {
  * @param {object} colony - the full colony object
  */
 function recalculatePriorities(colony) {
-  const method   = colony.calculationMethod;
-  const weights  = colony.methodWeights;
+  const method    = colony.calculationMethod;
+  const weights   = colony.methodWeights;
   const colonists = colony.colonists;
-  const n        = colonists.length;
-  // Per-priority caps: { 1: pct, 2: pct, 3: pct, 4: pct } (100 = no limit)
-  const maxPcts  = (colony.maxColonistsPerTaskPct && typeof colony.maxColonistsPerTaskPct === 'object')
-    ? colony.maxColonistsPerTaskPct
-    : { 1: colony.maxColonistsPerTaskPct ?? 100, 2: 100, 3: 100, 4: 100 };
+  const forcedPrio = colony.taskForcedPriority || {};
+  const limits    = colony.maxTasksPerPrioPerColonist || { 1: 7, 2: 6, 3: 6, 4: 6 };
+
+  // ── Step 1: Assign base priorities for all tasks × colonists ─────────────────
 
   TASKS.forEach(task => {
-    // Pre-compute expertise + learning maps for this task (colony-wide)
     const expertiseMap = calcByExpertise(colony, task);
     const learningMap  = calcByLearning(colony, task);
+    const taskWeight   = colony.taskWeights[task] || 3;
+    const isForced     = forcedPrio[task] != null;
 
     colonists.forEach(colonist => {
-      // Skip manually overridden tasks
       if (colonist.manualOverrides[task]) return;
 
-      // Chasse (Hunting): forbidden for non-archers
+      // Archer-only tasks: forbidden for non-archers
       if (ARCHER_ONLY_TASKS.includes(task) && colonist.combatRole !== 'archer') {
         colonist.taskPriorities[task] = 0;
         return;
@@ -201,58 +200,63 @@ function recalculatePriorities(colony) {
 
       let priority;
 
-      if (method === 'desire') {
+      if (isForced) {
+        // Respect negative desires (forbidden stays forbidden); otherwise apply forced priority
+        const desirePrio = calcByDesire(colony, colonist, task);
+        priority = desirePrio === 0 ? 0 : forcedPrio[task];
+      } else if (method === 'desire') {
         priority = calcByDesire(colony, colonist, task);
+        priority = applyTaskWeight(priority, taskWeight);
       } else if (method === 'expertise') {
         const exp = expertiseMap[colonist.id] ?? 3;
-        // Still respect forbidden desires
         const d   = calcByDesire(colony, colonist, task);
-        priority  = d === 0 ? 0 : exp;
+        priority  = applyTaskWeight(d === 0 ? 0 : exp, taskWeight);
       } else if (method === 'learning') {
         const lrn = learningMap[colonist.id] ?? 3;
         const d   = calcByDesire(colony, colonist, task);
-        priority  = d === 0 ? 0 : lrn;
+        priority  = applyTaskWeight(d === 0 ? 0 : lrn, taskWeight);
       } else {
         // combined
         const d   = calcByDesire(colony, colonist, task);
         const exp = expertiseMap[colonist.id] ?? 3;
         const lrn = learningMap[colonist.id] ?? 3;
-        priority  = blendPriorities(d, exp, lrn, weights);
+        priority  = applyTaskWeight(blendPriorities(d, exp, lrn, weights), taskWeight);
       }
-
-      // Apply task importance weight
-      const taskWeight = colony.taskWeights[task] || 3;
-      priority = applyTaskWeight(priority, taskWeight);
 
       colonist.taskPriorities[task] = priority;
     });
+  });
 
-    // Cap each priority level 1–4 in order, cascading excess colonists to the next level.
+  // ── Step 2: Per-colonist priority cap with cascade ────────────────────────────
+  // For each colonist, count tasks at each priority level (excluding forced tasks,
+  // manual overrides, and forbidden tasks). If count exceeds the limit, bump the
+  // least important excess tasks to the next priority level.
+
+  colonists.forEach(colonist => {
     for (let prio = 1; prio <= 4; prio++) {
-      const maxPct = maxPcts[prio] ?? 100;
-      if (maxPct >= 100) continue;
-      const maxAtPrio = Math.max(1, Math.ceil(n * maxPct / 100));
-      const atPrio = colonists.filter(
-        c => !c.manualOverrides[task] && c.taskPriorities[task] === prio
+      const limit = limits[prio] ?? 99;
+      // Collect eligible tasks: non-forced, non-manual-override, non-forbidden, at this prio
+      const eligible = TASKS.filter(t =>
+        !colonist.manualOverrides[t] &&
+        forcedPrio[t] == null &&
+        colonist.taskPriorities[t] === prio
       );
-      if (atPrio.length > maxAtPrio) {
-        // Score par compétence primaire pour décider qui garde ce niveau de priorité
-        const scored = atPrio.map(c => {
-          let score;
-          if (task === 'Formation') {
-            score = avgSkill(c, FORMATION_SKILLS);
-          } else {
-            const skill = TASK_SKILLS[task];
-            score = skill ? (c.skills[skill] || 0) : 0;
-          }
-          return { c, score };
-        });
-        // Tri décroissant : les meilleurs restent à ce niveau de priorité
-        scored.sort((a, b) => b.score - a.score);
-        scored.slice(maxAtPrio).forEach(({ c }) => {
-          c.taskPriorities[task] = prio + 1;
-        });
-      }
+      if (eligible.length <= limit) continue;
+
+      // Sort by taskWeight DESC (least important first), then skill ASC (weakest first)
+      const scored = eligible.map(t => {
+        const skill = TASK_SKILLS[t];
+        const skillLevel = (t === 'Formation')
+          ? avgSkill(colonist, FORMATION_SKILLS)
+          : (skill ? (colonist.skills[skill] || 0) : 0);
+        return { t, tw: colony.taskWeights[t] || 3, skillLevel };
+      });
+      scored.sort((a, b) => b.tw - a.tw || a.skillLevel - b.skillLevel);
+
+      // Bump excess tasks to next priority level
+      scored.slice(limit).forEach(({ t }) => {
+        colonist.taskPriorities[t] = prio + 1; // max prio is 5, so prio+1 ≤ 5
+      });
     }
   });
 }

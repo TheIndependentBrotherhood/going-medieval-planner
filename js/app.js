@@ -10,6 +10,9 @@ let _editingId = null; // colonist being edited in modal
 // Lock state for combined-method weight sliders (not persisted)
 const _lockedWeights = { desire: false, expertise: false, learning: false };
 
+// FIFO lock queue for priority-limit sliders (not persisted); max 2 locked simultaneously
+let _prioLimitLocks = [];
+
 // ── Icon helpers ──────────────────────────────────────────────────────────────
 
 function skillIcon(skill, size = 18) {
@@ -185,6 +188,61 @@ function renderMethodWeightsSection(c) {
     </div>`;
 }
 
+/** Number of tasks not forced to a fixed priority (= slider max & sum target). */
+function getUnlockedTaskCount(c) {
+  const forced = c.taskForcedPriority || {};
+  return TASKS.filter(t => forced[t] == null).length;
+}
+
+function renderPrioLimitSection(c) {
+  const total  = getUnlockedTaskCount(c);
+  const limits = c.maxTasksPerPrioPerColonist || defaultPrioLimits();
+  const sum    = [1, 2, 3, 4].reduce((s, p) => s + (limits[p] || 0), 0);
+  return [1, 2, 3, 4].map(prio => {
+    const val      = limits[prio] ?? 0;
+    const isLocked = _prioLimitLocks.includes(prio);
+    return `
+      <div class="form-row weight-row">
+        <button class="weight-lock-btn ${isLocked ? 'locked' : ''}"
+          onclick="togglePrioLimitLock(${prio})"
+          title="${isLocked ? 'Déverrouiller' : 'Verrouiller'}">
+          ${isLocked ? '🔒' : '🔓'}
+        </button>
+        <label>Priorité ${prio}</label>
+        <input type="range" id="prio-limit-slider-${prio}" min="0" max="${total}"
+          value="${val}" class="slider" ${isLocked ? 'disabled' : ''}
+          oninput="updatePrioLimitSlider(${prio}, this.value)">
+        <span class="weight-val" id="prio-limit-val-${prio}">${val}</span>
+      </div>`;
+  }).join('') + `
+    <div class="weight-total">
+      Total : <span id="prio-limit-total-val">${sum}</span> / ${total}
+    </div>`;
+}
+
+function renderTaskWeightsSection(c) {
+  const forced = c.taskForcedPriority || {};
+  return TASKS.map(t => {
+    const isForced  = forced[t] != null;
+    const forcedVal = isForced ? forced[t] : '';
+    return `
+      <div class="tw-row${isForced ? ' tw-row-forced' : ''}">
+        <span class="tw-name">${taskIcon(t)}${esc(t)}</span>
+        <input type="range" min="1" max="5" value="${c.taskWeights[t] || 3}" class="slider"
+          oninput="updateTaskWeight('${t}', this.value)">
+        <span class="tw-val" id="tw-val-${slugify(t)}">${c.taskWeights[t] || 3}</span>
+        <select class="input-field-sm force-prio-select"
+          title="Forcer la priorité (tous les colons sans envie négative)"
+          onchange="updateTaskForcedPriority('${t}', this.value)">
+          <option value="" ${!isForced ? 'selected' : ''}>—</option>
+          ${[1,2,3,4,5].map(v =>
+            `<option value="${v}" ${forcedVal === v ? 'selected' : ''}>${v}</option>`
+          ).join('')}
+        </select>
+      </div>`;
+  }).join('');
+}
+
 function renderColonyTab() {
   const c = Store.current();
   return `
@@ -236,34 +294,22 @@ function renderColonyTab() {
         </label>
       </div>
 
-      <h3>Limite de colons par tâche</h3>
-      <p class="hint">Pourcentage maximum de colons pouvant recevoir chaque niveau de priorité pour une même tâche.
-        Réduire cette valeur évite que trop de colons se retrouvent avec la même priorité, ce qui serait contre-productif.
-        En cas de dépassement, les colons en excès sont remontés au niveau de priorité suivant (cascade).</p>
-      ${[1, 2, 3, 4].map(prio => {
-        const val = (c.maxColonistsPerTaskPct && typeof c.maxColonistsPerTaskPct === 'object')
-          ? (c.maxColonistsPerTaskPct[prio] ?? 100)
-          : (prio === 1 ? (c.maxColonistsPerTaskPct ?? 100) : 100);
-        return `
-      <div class="form-row weight-row">
-        <label>% max de colons à priorité ${prio} par tâche</label>
-        <input type="range" id="max-colonists-pct-${prio}" min="10" max="100" step="5"
-          value="${val}"
-          class="slider" oninput="updateMaxColonistsPct(${prio}, this.value)">
-        <span class="weight-val" id="max-colonists-pct-val-${prio}">${val}</span>%
-      </div>`;
-      }).join('')}
+      <h3>Limite de tâches par colon</h3>
+      <p class="hint">Nombre maximum de tâches à chaque niveau de priorité qu'un colon peut avoir.
+        La somme doit égaler le nombre de tâches non forcées (${getUnlockedTaskCount(c)}).
+        En cas de dépassement, les tâches en excès (les moins importantes en premier) sont
+        décalées au niveau de priorité suivant (cascade).
+        Verrouillez jusqu'à 2 sliders pour les fixer lors de l'ajustement des autres (FIFO).</p>
+      <div id="prio-limit-section">
+        ${renderPrioLimitSection(c)}
+      </div>
 
       <h3>Importance des tâches</h3>
-      <p class="hint">1 = critique · 3 = normale · 5 = peu importante. Influence le calcul automatique.</p>
-      <div class="task-weights-grid">
-        ${TASKS.map(t => `
-          <div class="tw-row">
-            <span class="tw-name">${taskIcon(t)}${esc(t)}</span>
-            <input type="range" min="1" max="5" value="${c.taskWeights[t] || 3}" class="slider"
-              oninput="updateTaskWeight('${t}', this.value)">
-            <span class="tw-val" id="tw-val-${slugify(t)}">${c.taskWeights[t] || 3}</span>
-          </div>`).join('')}
+      <p class="hint">1 = critique · 3 = normale · 5 = peu importante. Influence le calcul automatique.
+        La colonne <strong>Prio. forcée</strong> permet de forcer tous les colons (sans envie négative)
+        à une priorité fixe pour cette tâche. Les tâches forcées sont exclues de la limite ci-dessus.</p>
+      <div class="task-weights-grid" id="task-weights-section">
+        ${renderTaskWeightsSection(c)}
       </div>
     </section>`;
 }
@@ -357,13 +403,143 @@ function updateTaskWeight(task, val) {
   Store.updateColony({ taskWeights: c.taskWeights });
 }
 
-function updateMaxColonistsPct(prio, val) {
-  const el = document.getElementById(`max-colonists-pct-val-${prio}`);
-  if (el) el.textContent = val;
-  const c = Store.current();
-  const pcts = Object.assign({}, c.maxColonistsPerTaskPct);
-  pcts[prio] = Number(val);
-  Store.updateColony({ maxColonistsPerTaskPct: pcts });
+// ── Priority-limit slider system (per colonist) ───────────────────────────────
+
+function togglePrioLimitLock(prio) {
+  const idx = _prioLimitLocks.indexOf(prio);
+  if (idx !== -1) {
+    // Already locked → unlock
+    _prioLimitLocks.splice(idx, 1);
+  } else {
+    // FIFO: if 2 already locked, evict the oldest before locking new one
+    if (_prioLimitLocks.length >= 2) _prioLimitLocks.shift();
+    _prioLimitLocks.push(prio);
+  }
+  const section = document.getElementById('prio-limit-section');
+  if (section) section.innerHTML = renderPrioLimitSection(Store.current());
+}
+
+function updatePrioLimitSlider(prio, val) {
+  const c     = Store.current();
+  const total = getUnlockedTaskCount(c);
+  const newVal = Number(val);
+  const limits = Object.assign({}, c.maxTasksPerPrioPerColonist);
+
+  // Budget excludes locked sliders (other than the dragged one)
+  let lockedSum = 0;
+  [1, 2, 3, 4].forEach(p => {
+    if (p !== prio && _prioLimitLocks.includes(p)) lockedSum += limits[p];
+  });
+
+  const maxVal  = Math.max(0, total - lockedSum);
+  const clamped = Math.min(newVal, maxVal);
+  const remaining = maxVal - clamped;
+
+  const freeKeys = [1, 2, 3, 4].filter(p => p !== prio && !_prioLimitLocks.includes(p));
+  limits[prio] = clamped;
+
+  if (freeKeys.length > 0) {
+    const currentFreeTotal = freeKeys.reduce((s, p) => s + limits[p], 0);
+    if (currentFreeTotal > 0) {
+      let distributed = 0;
+      freeKeys.forEach((p, i) => {
+        if (i === freeKeys.length - 1) {
+          limits[p] = Math.max(0, remaining - distributed);
+        } else {
+          const share = Math.round(remaining * c.maxTasksPerPrioPerColonist[p] / currentFreeTotal);
+          limits[p] = share;
+          distributed += share;
+        }
+      });
+    } else {
+      const share = Math.floor(remaining / freeKeys.length);
+      let rem = remaining - share * freeKeys.length;
+      freeKeys.forEach(p => { limits[p] = share + (rem-- > 0 ? 1 : 0); });
+    }
+  }
+
+  // Update DOM without full re-render
+  [1, 2, 3, 4].forEach(p => {
+    const valEl    = document.getElementById(`prio-limit-val-${p}`);
+    if (valEl) valEl.textContent = limits[p];
+    const sliderEl = document.getElementById(`prio-limit-slider-${p}`);
+    if (sliderEl && p !== prio) sliderEl.value = limits[p];
+  });
+  const totalEl = document.getElementById('prio-limit-total-val');
+  if (totalEl) totalEl.textContent = [1, 2, 3, 4].reduce((s, p) => s + limits[p], 0);
+
+  // Sync clamped value on dragged slider
+  const draggedEl = document.getElementById(`prio-limit-slider-${prio}`);
+  if (draggedEl) draggedEl.value = clamped;
+
+  Store.updateColony({ maxTasksPerPrioPerColonist: limits });
+}
+
+/**
+ * When a task is forced / un-forced, the total unlocked-task count changes.
+ * Scale unlocked-slider values proportionally; locked sliders stay fixed
+ * (clamped to the new total if they would exceed it).
+ */
+function adjustPrioLimitsForTaskCountChange() {
+  const c        = Store.current();
+  const newTotal = getUnlockedTaskCount(c);
+  const limits   = Object.assign({}, c.maxTasksPerPrioPerColonist);
+
+  // Clamp locked sliders to newTotal
+  let lockedSum = 0;
+  _prioLimitLocks.forEach(p => {
+    limits[p] = Math.min(limits[p], newTotal);
+    lockedSum += limits[p];
+  });
+
+  const freeKeys    = [1, 2, 3, 4].filter(p => !_prioLimitLocks.includes(p));
+  const freeTarget  = Math.max(0, newTotal - lockedSum);
+  const currentFree = freeKeys.reduce((s, p) => s + limits[p], 0);
+
+  if (freeKeys.length > 0) {
+    if (currentFree > 0) {
+      let distributed = 0;
+      freeKeys.forEach((p, i) => {
+        if (i === freeKeys.length - 1) {
+          limits[p] = Math.max(0, freeTarget - distributed);
+        } else {
+          const share = Math.round(freeTarget * limits[p] / currentFree);
+          limits[p] = share;
+          distributed += share;
+        }
+      });
+    } else {
+      const share = Math.floor(freeTarget / freeKeys.length);
+      let rem = freeTarget - share * freeKeys.length;
+      freeKeys.forEach(p => { limits[p] = share + (rem-- > 0 ? 1 : 0); });
+    }
+  }
+
+  Store.updateColony({ maxTasksPerPrioPerColonist: limits });
+}
+
+function updateTaskForcedPriority(task, val) {
+  const c      = Store.current();
+  const forced = Object.assign({}, c.taskForcedPriority || {});
+  const wasForced = forced[task] != null;
+
+  if (val !== '' && val !== null && val !== undefined) {
+    forced[task] = Number(val);
+  } else {
+    delete forced[task];
+  }
+  const nowForced = forced[task] != null;
+
+  Store.updateColony({ taskForcedPriority: forced });
+
+  // Adjust slider totals if the count of unlocked tasks changed
+  if (wasForced !== nowForced) adjustPrioLimitsForTaskCountChange();
+
+  // Partial re-render of both sections
+  const twSection = document.getElementById('task-weights-section');
+  if (twSection) twSection.innerHTML = renderTaskWeightsSection(Store.current());
+  const plSection = document.getElementById('prio-limit-section');
+  if (plSection) plSection.innerHTML = renderPrioLimitSection(Store.current());
 }
 
 // ── Colonists tab ─────────────────────────────────────────────────────────────
