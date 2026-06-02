@@ -884,7 +884,7 @@ a { color: var(--gold); }
 /* Mobile: < 768px → 4 columns */
 @media (max-width: 767px) {
   :root { --grid-cols: 4; }
-  #tab-content { padding: 12px; padding-bottom: calc(56px + 12px); }
+  #tab-content { padding: 12px; padding-bottom: calc(56px + 12px + env(safe-area-inset-bottom, 0px)); }
   .card { padding: 14px; }
   .colonist-grid { grid-template-columns: 1fr; }
   .roles-grid { grid-template-columns: 1fr; }
