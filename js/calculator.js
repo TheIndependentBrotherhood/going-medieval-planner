@@ -179,9 +179,10 @@ function recalculatePriorities(colony) {
   const weights  = colony.methodWeights;
   const colonists = colony.colonists;
   const n        = colonists.length;
-  // % max de colons pouvant avoir priorité 1 par tâche (100 = pas de limite)
-  const maxPct   = colony.maxColonistsPerTaskPct ?? 100;
-  const maxAtPrio1 = Math.max(1, Math.ceil(n * maxPct / 100));
+  // Per-priority caps: { 1: pct, 2: pct, 3: pct, 4: pct } (100 = no limit)
+  const maxPcts  = (colony.maxColonistsPerTaskPct && typeof colony.maxColonistsPerTaskPct === 'object')
+    ? colony.maxColonistsPerTaskPct
+    : { 1: colony.maxColonistsPerTaskPct ?? 100, 2: 100, 3: 100, 4: 100 };
 
   TASKS.forEach(task => {
     // Pre-compute expertise + learning maps for this task (colony-wide)
@@ -226,16 +227,17 @@ function recalculatePriorities(colony) {
       colonist.taskPriorities[task] = priority;
     });
 
-    // Cap: au plus maxAtPrio1 colons peuvent avoir priorité 1 par tâche.
-    // En cas de dépassement, on garde les meilleurs (par compétence liée) à 1
-    // et on élève les autres à 2.
-    if (maxPct < 100) {
-      const atPrio1 = colonists.filter(
-        c => !c.manualOverrides[task] && c.taskPriorities[task] === 1
+    // Cap each priority level 1–4 in order, cascading excess colonists to the next level.
+    for (let prio = 1; prio <= 4; prio++) {
+      const maxPct = maxPcts[prio] ?? 100;
+      if (maxPct >= 100) continue;
+      const maxAtPrio = Math.max(1, Math.ceil(n * maxPct / 100));
+      const atPrio = colonists.filter(
+        c => !c.manualOverrides[task] && c.taskPriorities[task] === prio
       );
-      if (atPrio1.length > maxAtPrio1) {
-        // Score par compétence primaire pour décider qui garde la priorité 1
-        const scored = atPrio1.map(c => {
+      if (atPrio.length > maxAtPrio) {
+        // Score par compétence primaire pour décider qui garde ce niveau de priorité
+        const scored = atPrio.map(c => {
           let score;
           if (task === 'Formation') {
             score = avgSkill(c, FORMATION_SKILLS);
@@ -245,10 +247,10 @@ function recalculatePriorities(colony) {
           }
           return { c, score };
         });
-        // Tri décroissant : les meilleurs restent à priorité 1
+        // Tri décroissant : les meilleurs restent à ce niveau de priorité
         scored.sort((a, b) => b.score - a.score);
-        scored.slice(maxAtPrio1).forEach(({ c }) => {
-          c.taskPriorities[task] = 2;
+        scored.slice(maxAtPrio).forEach(({ c }) => {
+          c.taskPriorities[task] = prio + 1;
         });
       }
     }

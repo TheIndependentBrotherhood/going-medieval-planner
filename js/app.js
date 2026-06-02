@@ -237,15 +237,22 @@ function renderColonyTab() {
       </div>
 
       <h3>Limite de colons par tâche</h3>
-      <p class="hint">Pourcentage maximum de colons pouvant recevoir la priorité 1 pour une même tâche.
-        Réduire cette valeur évite que trop de colons se retrouvent avec la même priorité haute, ce qui serait contre-productif.</p>
+      <p class="hint">Pourcentage maximum de colons pouvant recevoir chaque niveau de priorité pour une même tâche.
+        Réduire cette valeur évite que trop de colons se retrouvent avec la même priorité, ce qui serait contre-productif.
+        En cas de dépassement, les colons en excès sont remontés au niveau de priorité suivant (cascade).</p>
+      ${[1, 2, 3, 4].map(prio => {
+        const val = (c.maxColonistsPerTaskPct && typeof c.maxColonistsPerTaskPct === 'object')
+          ? (c.maxColonistsPerTaskPct[prio] ?? 100)
+          : (prio === 1 ? (c.maxColonistsPerTaskPct ?? 100) : 100);
+        return `
       <div class="form-row weight-row">
-        <label>% max de colons à priorité 1 par tâche</label>
-        <input type="range" id="max-colonists-pct" min="10" max="100" step="5"
-          value="${c.maxColonistsPerTaskPct ?? 100}"
-          class="slider" oninput="updateMaxColonistsPct(this.value)">
-        <span class="weight-val" id="max-colonists-pct-val">${c.maxColonistsPerTaskPct ?? 100}</span>%
-      </div>
+        <label>% max de colons à priorité ${prio} par tâche</label>
+        <input type="range" id="max-colonists-pct-${prio}" min="10" max="100" step="5"
+          value="${val}"
+          class="slider" oninput="updateMaxColonistsPct(${prio}, this.value)">
+        <span class="weight-val" id="max-colonists-pct-val-${prio}">${val}</span>%
+      </div>`;
+      }).join('')}
 
       <h3>Importance des tâches</h3>
       <p class="hint">1 = critique · 3 = normale · 5 = peu importante. Influence le calcul automatique.</p>
@@ -350,10 +357,13 @@ function updateTaskWeight(task, val) {
   Store.updateColony({ taskWeights: c.taskWeights });
 }
 
-function updateMaxColonistsPct(val) {
-  const el = document.getElementById('max-colonists-pct-val');
+function updateMaxColonistsPct(prio, val) {
+  const el = document.getElementById(`max-colonists-pct-val-${prio}`);
   if (el) el.textContent = val;
-  Store.updateColony({ maxColonistsPerTaskPct: Number(val) });
+  const c = Store.current();
+  const pcts = Object.assign({}, c.maxColonistsPerTaskPct);
+  pcts[prio] = Number(val);
+  Store.updateColony({ maxColonistsPerTaskPct: pcts });
 }
 
 // ── Colonists tab ─────────────────────────────────────────────────────────────

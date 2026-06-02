@@ -63,7 +63,8 @@ function defaultColony(name = 'Ma Colonie') {
     negativeDesireMode:     'forbid',  // 'forbid' | 'lowest'
     negativeDesirePrio:     5,
     positiveDesireBonus:    true,
-    maxColonistsPerTaskPct: 50         // % max de colons pouvant avoir priorité 1 par tâche
+    // % max de colons pouvant avoir chaque niveau de priorité par tâche (100 = pas de limite)
+    maxColonistsPerTaskPct: { 1: 50, 2: 100, 3: 100, 4: 100 }
   };
 }
 
@@ -85,6 +86,16 @@ const Store = (() => {
     } catch (_) { _saves = {}; }
 
     _active = localStorage.getItem(ACTIVE_KEY) || null;
+
+    // Migrate old scalar maxColonistsPerTaskPct to per-priority object format
+    Object.values(_saves).forEach(colony => {
+      if (typeof colony.maxColonistsPerTaskPct === 'number') {
+        const old = colony.maxColonistsPerTaskPct;
+        colony.maxColonistsPerTaskPct = { 1: old, 2: 100, 3: 100, 4: 100 };
+      } else if (!colony.maxColonistsPerTaskPct || typeof colony.maxColonistsPerTaskPct !== 'object') {
+        colony.maxColonistsPerTaskPct = { 1: 100, 2: 100, 3: 100, 4: 100 };
+      }
+    });
 
     // Ensure at least one colony exists
     if (Object.keys(_saves).length === 0) {
