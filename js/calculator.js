@@ -256,10 +256,14 @@ function recalculatePriorities(colony) {
       .sort((a, b) => b.score - a.score);
 
     // ── Apply band distribution ─────────────────────────────────────────────
-    const raw    = taskDist[task] || { high: 0, mid: rankable.length, low: 0 };
-    const avail  = rankable.length;
-    const high   = Math.min(raw.high || 0, avail);
-    const mid    = Math.min(raw.mid  || 0, avail - high);
+    const avail = rankable.length;
+
+    const raw = taskDist[task] || {};
+    const rawTotal = (raw.high || 0) + (raw.mid || 0) + (raw.low || 0);
+    const normalized = rawTotal === 0 ? { high: 0, mid: avail, low: 0 } : raw;
+
+    const high   = Math.min(normalized.high || 0, avail);
+    const mid    = Math.min(normalized.mid  || 0, avail - high);
     // Everyone beyond high+mid falls in the low band
 
     rankable.forEach((entry, i) => {
