@@ -567,7 +567,6 @@ a { color: var(--gold); }
   color: #fff;
 }
 
-.schedule-cell:hover { filter: brightness(1.3); }
 
 .legend {
   display: flex;
@@ -692,7 +691,6 @@ a { color: var(--gold); }
   color: #fff;
 }
 
-.prio-cell:hover { filter: brightness(1.3); }
 .prio-cell.manual { border: 2px solid var(--gold) !important; }
 
 /* ── Data table (generic) ─────────────────────────────────────────────────── */
