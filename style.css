@@ -926,7 +926,8 @@ a { color: var(--gold); }
   z-index: 200;
   background: var(--surface);
   border-top: 2px solid var(--border);
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   align-items: stretch;
 }
 
