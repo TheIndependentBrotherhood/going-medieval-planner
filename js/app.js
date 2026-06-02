@@ -24,6 +24,40 @@ function taskIcon(task, size = 18) {
   return `<img src="${url}" alt="" width="${size}" height="${size}" class="label-icon" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
 }
 
+// ── Skill level colour gradient (red=0 → green=25 → blue=50) ─────────────────
+
+function skillLevelColor(level) {
+  level = Math.max(0, Math.min(50, level));
+  if (level <= 25) {
+    const t = level / 25;
+    return `rgb(${Math.round(239*(1-t)+34*t)},${Math.round(68*(1-t)+197*t)},${Math.round(68*(1-t)+94*t)})`;
+  }
+  const t = (level - 25) / 25;
+  return `rgb(${Math.round(34*(1-t)+59*t)},${Math.round(197*(1-t)+130*t)},${Math.round(94*(1-t)+246*t)})`;
+}
+
+// ── Desire badge rotation ─────────────────────────────────────────────────────
+
+const DESIRE_EMOJIS = { '-2': '😡', '-1': '😟', '0': '😐', '1': '😊', '2': '😍' };
+let _desireTimers = {};
+
+function startDesireRotation() {
+  Object.values(_desireTimers).forEach(clearInterval);
+  _desireTimers = {};
+
+  document.querySelectorAll('.desire-badge').forEach(el => {
+    const cid    = el.dataset.colonistId;
+    const values = el.dataset.desires.split(',').map(Number);
+    let idx = 0;
+
+    _desireTimers[cid] = setInterval(() => {
+      idx = (idx + 1) % SKILLS.length;
+      const emoji = el.querySelector('.desire-badge-emoji');
+      if (emoji) emoji.textContent = DESIRE_EMOJIS[String(values[idx])] ?? '😐';
+    }, 1500);
+  });
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -331,13 +365,18 @@ function renderColonistCard(colonist) {
     ? (COMBAT_ROLES.find(r => r.id === colonist.combatRole)?.label || '—')
     : '—';
 
-  const topSkills = [...SKILLS]
-    .sort((a, b) => colonist.skills[b] - colonist.skills[a])
-    .slice(0, 3)
-    .map(s => `<span class="skill-pill">${skillIcon(s)}${esc(s)} ${colonist.skills[s]}</span>`)
-    .join('');
+  // Skill grid: every skill as a column (icon + colour-coded level)
+  const skillCells = SKILLS.map(s => {
+    const lvl   = colonist.skills[s];
+    const color = skillLevelColor(lvl);
+    return `<div class="skill-grid-cell" title="${esc(s)}: ${lvl}">${skillIcon(s, 14)}<span class="skill-grid-lvl" style="color:${color}">${lvl}</span></div>`;
+  }).join('');
 
-  const desireRow = SKILLS.map(s => {
+  // Desire badge – rotating emoji prefix + full numeric desire row
+  const firstDesire  = colonist.desires[SKILLS[0]];
+  const firstEmoji   = DESIRE_EMOJIS[String(firstDesire)] ?? '😐';
+  const desiresStr   = SKILLS.map(s => colonist.desires[s]).join(',');
+  const desireSpans  = SKILLS.map(s => {
     const d     = colonist.desires[s];
     const color = d > 0 ? '#22c55e' : d < 0 ? '#ef4444' : '#6b7280';
     return `<span style="color:${color}" title="${esc(s)}: ${d >= 0 ? '+' : ''}${d}">${d >= 0 ? '+' : ''}${d}</span>`;
@@ -352,8 +391,10 @@ function renderColonistCard(colonist) {
           <span class="badge badge-role">${esc(roleLabel)}</span>
         </div>
       </div>
-      <div class="top-skills">${topSkills || '<em>Pas de compétences</em>'}</div>
-      <div class="desire-row" title="Envies par compétence">${desireRow}</div>
+      <div class="skill-grid-badge">${skillCells}</div>
+      <div class="desire-badge" data-colonist-id="${colonist.id}" data-desires="${desiresStr}" title="Envies par compétence">
+        <span class="desire-badge-emoji">${firstEmoji}</span>${desireSpans}
+      </div>
       <div class="card-actions">
         <button class="btn-sm btn-primary" onclick="openColonistModal('${colonist.id}')">✏️ Éditer</button>
         <button class="btn-sm btn-secondary" onclick="changeSchedule('${colonist.id}')">📅 Changer planning</button>
@@ -747,6 +788,7 @@ function bindTabEvents(tab) {
   }
 
   if (tab === 'colonists') {
+    startDesireRotation();
     document.getElementById('btn-add-colonist')?.addEventListener('click', () => {
       openPromptModal('Nom du colon', 'Nouveau colon', name => {
         Store.addColonist(name);
