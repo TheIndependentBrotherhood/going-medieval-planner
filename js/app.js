@@ -445,7 +445,10 @@ function renderSchedulesTab() {
     <section class="card">
       <div class="section-header">
         <h2>📅 Plannings</h2>
-        <button id="btn-reset-schedules" class="btn btn-secondary">↺ Réinitialiser</button>
+        <div class="prio-actions">
+          <button id="btn-auto-assign-schedules" class="btn btn-primary">⚡ Auto-assigner</button>
+          <button id="btn-reset-schedules" class="btn btn-secondary">↺ Réinitialiser</button>
+        </div>
       </div>
       ${warn}
       <div class="legend">${legend}</div>
@@ -676,6 +679,14 @@ function bindTabEvents(tab) {
         cell.style.background = SCHEDULE_STATE_COLORS[next];
         cell.title            = `${hour}h – ${SCHEDULE_STATE_LABELS[next]}`;
       });
+    });
+
+    document.getElementById('btn-auto-assign-schedules')?.addEventListener('click', () => {
+      const colony = Store.current();
+      if (!colony.colonists.length) return;
+      autoAssignSchedules(colony);
+      Store.updateColony({ colonists: colony.colonists });
+      renderTab('schedules');
     });
 
     document.getElementById('btn-reset-schedules')?.addEventListener('click', () => {

@@ -290,6 +290,49 @@ function assignCombatRoles(colony) {
   });
 }
 
+// ── Schedule auto-assignment ──────────────────────────────────────────────────
+
+/**
+ * Automatically distribute colonists between schedules A and B so that both
+ * groups have a homogeneous skill profile and the player experiences minimal
+ * downtime (each schedule always has capable colonists covering every major task).
+ *
+ * Strategy: greedy skill-balancing.
+ *   1. Rank colonists by total skill (descending).
+ *   2. For each colonist (strongest first), assign to the schedule whose
+ *      current accumulated skill total is the lowest.
+ * This produces two groups with nearly equal overall skill and a balanced
+ * spread of specialists, so both work shifts are always productive.
+ *
+ * @param {object} colony - the full colony object (mutates colonist.schedule)
+ */
+function autoAssignSchedules(colony) {
+  const colonists = colony.colonists;
+  if (!colonists.length) return;
+
+  function totalSkill(c) {
+    return SKILLS.reduce((sum, s) => sum + (c.skills[s] || 0), 0);
+  }
+
+  // Sort descending so the strongest colonist is distributed first
+  const withTotals = colonists
+    .map(c => ({ c, ts: totalSkill(c) }))
+    .sort((a, b) => b.ts - a.ts);
+
+  let scoreA = 0;
+  let scoreB = 0;
+
+  withTotals.forEach(({ c, ts }) => {
+    if (scoreA <= scoreB) {
+      c.schedule = 'A';
+      scoreA += ts;
+    } else {
+      c.schedule = 'B';
+      scoreB += ts;
+    }
+  });
+}
+
 // ── Schedule utilities ────────────────────────────────────────────────────────
 
 /**
