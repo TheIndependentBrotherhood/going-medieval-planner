@@ -21,6 +21,18 @@ function defaultTaskWeights() {
   return w;
 }
 
+function defaultPrioLimits() {
+  const n    = TASKS.length; // 25
+  const base = Math.floor(n / 4);
+  const rem  = n - base * 4;
+  return {
+    1: base + (rem > 0 ? 1 : 0),
+    2: base + (rem > 1 ? 1 : 0),
+    3: base + (rem > 2 ? 1 : 0),
+    4: base
+  };
+}
+
 function defaultColonist(name = 'Nouveau colon') {
   const skills   = {};
   const desires  = {};
@@ -63,7 +75,10 @@ function defaultColony(name = 'Ma Colonie') {
     negativeDesireMode:     'forbid',  // 'forbid' | 'lowest'
     negativeDesirePrio:     5,
     positiveDesireBonus:    true,
-    maxColonistsPerTaskPct: 50         // % max de colons pouvant avoir priorité 1 par tâche
+    // Nombre max de tâches à chaque niveau de priorité par colon (somme = nb de tâches non forcées)
+    maxTasksPerPrioPerColonist: defaultPrioLimits(),
+    // Priorité forcée par tâche (tous les colons sans envie négative reçoivent cette priorité)
+    taskForcedPriority:     {}
   };
 }
 
@@ -85,6 +100,18 @@ const Store = (() => {
     } catch (_) { _saves = {}; }
 
     _active = localStorage.getItem(ACTIVE_KEY) || null;
+
+    // Migrate old maxColonistsPerTaskPct to new maxTasksPerPrioPerColonist
+    Object.values(_saves).forEach(colony => {
+      if (!colony.maxTasksPerPrioPerColonist || typeof colony.maxTasksPerPrioPerColonist !== 'object') {
+        colony.maxTasksPerPrioPerColonist = defaultPrioLimits();
+      }
+      if (!colony.taskForcedPriority || typeof colony.taskForcedPriority !== 'object') {
+        colony.taskForcedPriority = {};
+      }
+      // Remove old field
+      delete colony.maxColonistsPerTaskPct;
+    });
 
     // Ensure at least one colony exists
     if (Object.keys(_saves).length === 0) {
