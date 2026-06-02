@@ -49,13 +49,8 @@ function startDesireRotation() {
 
     _desireTimers[cid] = setInterval(() => {
       idx = (idx + 1) % SKILLS.length;
-      const v    = values[idx];
-      const s    = SKILLS[idx];
-      const icon  = el.querySelector('.desire-badge-icon');
       const emoji = el.querySelector('.desire-badge-emoji');
-      if (icon)  icon.innerHTML = skillIcon(s, 12);
-      if (emoji) emoji.textContent = DESIRE_EMOJIS[String(v)] ?? '😐';
-      el.title = `${s}\u00a0: ${v >= 0 ? '+' : ''}${v}`;
+      if (emoji) emoji.textContent = DESIRE_EMOJIS[String(values[idx])] ?? '😐';
     }, 1500);
   });
 }
@@ -277,11 +272,15 @@ function renderColonistCard(colonist) {
     return `<div class="skill-grid-cell" title="${esc(s)}: ${lvl}">${skillIcon(s, 14)}<span class="skill-grid-lvl" style="color:${color}">${lvl}</span></div>`;
   }).join('');
 
-  // Desire badge – initial state is the first skill
-  const firstSkill   = SKILLS[0];
-  const firstDesire  = colonist.desires[firstSkill];
-  const desiresStr   = SKILLS.map(s => colonist.desires[s]).join(',');
+  // Desire badge – rotating emoji prefix + full numeric desire row
+  const firstDesire  = colonist.desires[SKILLS[0]];
   const firstEmoji   = DESIRE_EMOJIS[String(firstDesire)] ?? '😐';
+  const desiresStr   = SKILLS.map(s => colonist.desires[s]).join(',');
+  const desireSpans  = SKILLS.map(s => {
+    const d     = colonist.desires[s];
+    const color = d > 0 ? '#22c55e' : d < 0 ? '#ef4444' : '#6b7280';
+    return `<span style="color:${color}" title="${esc(s)}: ${d >= 0 ? '+' : ''}${d}">${d >= 0 ? '+' : ''}${d}</span>`;
+  }).join('');
 
   return `
     <div class="colonist-card">
@@ -293,11 +292,8 @@ function renderColonistCard(colonist) {
         </div>
       </div>
       <div class="skill-grid-badge">${skillCells}</div>
-      <div class="desire-badge" data-colonist-id="${colonist.id}" data-desires="${desiresStr}"
-           title="${esc(firstSkill)}\u00a0: ${firstDesire >= 0 ? '+' : ''}${firstDesire}">
-        <span class="desire-badge-icon">${skillIcon(firstSkill, 12)}</span>
-        <span class="desire-badge-emoji">${firstEmoji}</span>
-        <span class="desire-badge-label">Envies</span>
+      <div class="desire-badge" data-colonist-id="${colonist.id}" data-desires="${desiresStr}" title="Envies par compétence">
+        <span class="desire-badge-emoji">${firstEmoji}</span>${desireSpans}
       </div>
       <div class="card-actions">
         <button class="btn-sm btn-primary" onclick="openColonistModal('${colonist.id}')">✏️ Éditer</button>
