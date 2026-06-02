@@ -189,6 +189,17 @@ function renderColonyTab() {
         </label>
       </div>
 
+      <h3>Limite de colons par tâche</h3>
+      <p class="hint">Pourcentage maximum de colons pouvant recevoir la priorité 1 pour une même tâche.
+        Réduire cette valeur évite que trop de colons se retrouvent avec la même priorité haute, ce qui serait contre-productif.</p>
+      <div class="form-row weight-row">
+        <label>% max de colons à priorité 1 par tâche</label>
+        <input type="range" id="max-colonists-pct" min="10" max="100" step="5"
+          value="${c.maxColonistsPerTaskPct ?? 100}"
+          class="slider" oninput="updateMaxColonistsPct(this.value)">
+        <span class="weight-val" id="max-colonists-pct-val">${c.maxColonistsPerTaskPct ?? 100}</span>%
+      </div>
+
       <h3>Importance des tâches</h3>
       <p class="hint">1 = critique · 3 = normale · 5 = peu importante. Influence le calcul automatique.</p>
       <div class="task-weights-grid">
@@ -290,6 +301,12 @@ function updateTaskWeight(task, val) {
   const c = Store.current();
   c.taskWeights[task] = Number(val);
   Store.updateColony({ taskWeights: c.taskWeights });
+}
+
+function updateMaxColonistsPct(val) {
+  const el = document.getElementById('max-colonists-pct-val');
+  if (el) el.textContent = val;
+  Store.updateColony({ maxColonistsPerTaskPct: Number(val) });
 }
 
 // ── Colonists tab ─────────────────────────────────────────────────────────────

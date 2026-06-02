@@ -57,12 +57,13 @@ function defaultColony(name = 'Ma Colonie') {
       A: [...DEFAULT_SCHEDULE_A],
       B: [...DEFAULT_SCHEDULE_B]
     },
-    taskWeights:         defaultTaskWeights(),
-    calculationMethod:   'combined',
-    methodWeights:       { desire: 40, expertise: 40, learning: 20 },
-    negativeDesireMode:  'forbid',  // 'forbid' | 'lowest'
-    negativeDesirePrio:  5,
-    positiveDesireBonus: true
+    taskWeights:            defaultTaskWeights(),
+    calculationMethod:      'combined',
+    methodWeights:          { desire: 40, expertise: 40, learning: 20 },
+    negativeDesireMode:     'forbid',  // 'forbid' | 'lowest'
+    negativeDesirePrio:     5,
+    positiveDesireBonus:    true,
+    maxColonistsPerTaskPct: 50         // % max de colons pouvant avoir priorité 1 par tâche
   };
 }
 
