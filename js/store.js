@@ -16,9 +16,9 @@ function deepClone(obj) {
 // ── Default builders ──────────────────────────────────────────────────────────
 
 /**
- * Default task distribution: for each task, start with all colonists in the
- * mid band (priority 3). Actual counts are adjusted when colonists are
- * added/removed via adjustTaskDistributionsForColonistCountChange().
+ * Default task distribution: for each task, start with a neutral (all-zero)
+ * distribution. Actual counts are initialized/adjusted based on colonist count
+ * via adjustTaskDistributionsForColonistCountChange().
  */
 function defaultTaskDistribution() {
   const w = {};
