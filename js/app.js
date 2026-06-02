@@ -504,8 +504,10 @@ function adjustTaskDistributionsForColonistCountChange() {
     // Clamp locked bands to new total and compute free budget
     let lockedSum = 0;
     locks.forEach(b => {
-      d[b] = Math.min(d[b] || 0, n);
-      lockedSum += d[b];
+      // Clamp while preserving the total budget across locked bands
+      const v = Math.min(d[b] || 0, n - lockedSum);
+      d[b] = v;
+      lockedSum += v;
     });
 
     const freeBands   = ['high', 'mid', 'low'].filter(b => !locks.includes(b));
