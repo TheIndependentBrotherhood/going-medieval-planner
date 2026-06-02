@@ -63,6 +63,7 @@ function startDesireRotation() {
 document.addEventListener('DOMContentLoaded', () => {
   Store.load();
   bindNav();
+  bindMobileTabbar();
   bindHeader();
   renderTab(_activeTab);
 });
@@ -72,12 +73,24 @@ document.addEventListener('DOMContentLoaded', () => {
 function bindNav() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      _activeTab = btn.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderTab(_activeTab);
+      switchTab(btn.dataset.tab);
     });
   });
+}
+
+function bindMobileTabbar() {
+  document.querySelectorAll('.tabbar-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchTab(btn.dataset.tab);
+    });
+  });
+}
+
+function switchTab(tab) {
+  _activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tabbar-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderTab(_activeTab);
 }
 
 function renderTab(tab) {
@@ -126,7 +139,7 @@ function openSavesModal() {
         ${s.id !== active
           ? `<button class="btn-sm btn-primary" onclick="switchSave('${s.id}')">Charger</button>`
           : '<span class="badge-active">Actif</span>'}
-        <button class="btn-sm btn-danger" onclick="deleteSave('${s.id}')">Supprimer</button>
+        <button class="btn-sm btn-link-danger" onclick="deleteSave('${s.id}')">Supprimer</button>
       </div>
     </div>`).join('');
 
@@ -396,9 +409,9 @@ function renderColonistCard(colonist) {
         <span class="desire-badge-emoji">${firstEmoji}</span>${desireSpans}
       </div>
       <div class="card-actions">
-        <button class="btn-sm btn-primary" onclick="openColonistModal('${colonist.id}')">✏️ Éditer</button>
-        <button class="btn-sm btn-secondary" onclick="changeSchedule('${colonist.id}')">📅 Changer planning</button>
-        <button class="btn-sm btn-danger" onclick="deleteColonist('${colonist.id}')">🗑️ Supprimer</button>
+        <button class="btn-sm btn-secondary" onclick="openColonistModal('${colonist.id}')">✏️ Éditer</button>
+        <button class="btn-sm btn-tertiary" onclick="changeSchedule('${colonist.id}')">📅 Changer planning</button>
+        <button class="btn-sm btn-link-danger" onclick="deleteColonist('${colonist.id}')">🗑️ Supprimer</button>
       </div>
     </div>`;
 }
