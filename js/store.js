@@ -94,12 +94,15 @@ const Store = (() => {
 
     // Migrate old data model to new taskDistribution
     Object.values(_saves).forEach(colony => {
+      const n = Array.isArray(colony.colonists) ? colony.colonists.length : 0;
       if (!colony.taskDistribution || typeof colony.taskDistribution !== 'object') {
         colony.taskDistribution = defaultTaskDistribution();
+        // Initialize each task with all colonists in the mid band (prio 3)
+        TASKS.forEach(t => { colony.taskDistribution[t] = { high: 0, mid: n, low: 0 }; });
       }
       // Ensure every task has an entry (e.g. if new tasks were added)
       TASKS.forEach(t => {
-        if (!colony.taskDistribution[t]) colony.taskDistribution[t] = { high: 0, mid: 0, low: 0 };
+        if (!colony.taskDistribution[t]) colony.taskDistribution[t] = { high: 0, mid: n, low: 0 };
       });
       if (!colony.taskForcedPriority || typeof colony.taskForcedPriority !== 'object') {
         colony.taskForcedPriority = {};
