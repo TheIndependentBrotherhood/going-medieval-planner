@@ -315,14 +315,14 @@ function autoAssignSchedules(colony) {
   }
 
   // Sort descending so the strongest colonist is distributed first
-  const sorted = [...colonists].sort((a, b) => totalSkill(b) - totalSkill(a));
+  const withTotals = colonists
+    .map(c => ({ c, ts: totalSkill(c) }))
+    .sort((a, b) => b.ts - a.ts);
 
   let scoreA = 0;
   let scoreB = 0;
 
-  sorted.forEach(col => {
-    const c = colonists.find(c => c.id === col.id);
-    const ts = totalSkill(c);
+  withTotals.forEach(({ c, ts }) => {
     if (scoreA <= scoreB) {
       c.schedule = 'A';
       scoreA += ts;
