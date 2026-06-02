@@ -604,17 +604,41 @@ a { color: var(--gold); }
   z-index: 2;
 }
 
-.prio-col-header {
+/* Colonist name column header (top-left corner) */
+.prio-colon-header {
+  position: sticky;
+  left: 0;
+  z-index: 3 !important;
+  min-width: 120px;
+  background: var(--surface);
+}
+
+/* Task column headers — vertical text, compact */
+.prio-task-header {
   text-align: center !important;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: .75rem;
   writing-mode: vertical-lr;
   transform: rotate(180deg);
-  padding: 8px 6px !important;
-  height: 80px;
+  padding: 8px 4px !important;
+  height: 90px;
   vertical-align: bottom;
+  font-size: .72rem;
+  overflow: hidden;
+  max-width: 36px;
+  width: 36px;
+}
+
+/* Colonist name cell (row header) */
+.prio-colon-name-cell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text);
+  padding: 4px 10px !important;
+  min-width: 120px;
+  border-right: 1px solid var(--border);
 }
 
 .prio-table td { padding: 3px 4px; border-bottom: 1px solid #1a1208; }
@@ -646,7 +670,8 @@ a { color: var(--gold); }
   cursor: pointer;
   transition: filter .1s;
   user-select: none;
-  min-width: 50px;
+  width: 36px;
+  min-width: 36px;
   border-radius: 3px;
   border: 1px solid transparent;
 }

@@ -466,14 +466,12 @@ function renderPrioritiesTab() {
       <p class="hint">Ajoutez des colons dans l'onglet Colons pour gérer leurs priorités.</p>
     </section>`;
 
-  const headerCells = colonists.map(c =>
-    `<th class="prio-col-header" title="${esc(c.name)}">${esc(c.name)}</th>`).join('');
+  const taskHeaders = TASKS.map(task =>
+    `<th class="prio-task-header" title="${esc(task)}">${esc(task)}</th>`
+  ).join('');
 
-  const rows = TASKS.map(task => {
-    const skill    = task === 'Formation' ? 'Tireur + Corps à corps'
-                   : TASK_SKILLS[task]   ? TASK_SKILLS[task]
-                   : '—';
-    const cells    = colonists.map(c => {
+  const rows = colonists.map(c => {
+    const cells = TASKS.map(task => {
       const prio   = c.taskPriorities[task] ?? 3;
       const manual = c.manualOverrides?.[task] ? ' manual' : '';
       return `
@@ -486,12 +484,7 @@ function renderPrioritiesTab() {
 
     return `
       <tr>
-        <td class="task-name-cell">${taskIcon(task)}${esc(task)}</td>
-        <td class="skill-cell">${task === 'Formation'
-          ? `${skillIcon('Tireur')}Tireur + ${skillIcon('Corps à corps')}Corps à corps`
-          : TASK_SKILLS[task]
-            ? `${skillIcon(TASK_SKILLS[task])}${esc(skill)}`
-            : esc(skill)}</td>
+        <td class="prio-colon-name-cell">${esc(c.name)}</td>
         ${cells}
       </tr>`;
   }).join('');
@@ -513,7 +506,7 @@ function renderPrioritiesTab() {
       </div>
       <div class="table-scroll">
         <table class="prio-table">
-          <thead><tr><th>Tâche</th><th>Compétence</th>${headerCells}</tr></thead>
+          <thead><tr><th class="prio-colon-header">Colon</th>${taskHeaders}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -588,12 +581,10 @@ function renderSummaryTab() {
 function exportTable() {
   const colony    = Store.current();
   const colonists = colony.colonists;
-  const header    = ['Tâche', 'Compétence', ...colonists.map(c => c.name)].join('\t');
-  const rows      = TASKS.map(task => {
-    const skill = task === 'Formation' ? 'Tireur+Corps'
-                : TASK_SKILLS[task] || '—';
-    return [task, skill, ...colonists.map(c => c.taskPriorities[task] ?? 3)].join('\t');
-  });
+  const header    = ['Colon', ...TASKS].join('\t');
+  const rows      = colonists.map(c =>
+    [c.name, ...TASKS.map(task => c.taskPriorities[task] ?? 3)].join('\t')
+  );
   const text = [header, ...rows].join('\n');
   navigator.clipboard.writeText(text)
     .then(() => alert('Tableau copié ! Collez-le dans Excel ou Google Sheets.'))
