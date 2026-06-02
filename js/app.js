@@ -546,12 +546,30 @@ function renderSummaryTab() {
   }).join('');
 
   const taskSummary = TASKS.map(task => {
+    const skill        = TASK_SKILLS[task];
+    const isFormation  = task === 'Formation';
+
     const assigned = colonists
       .filter(c => (c.taskPriorities[task] ?? 0) > 0)
       .sort((a, b) => (a.taskPriorities[task] ?? 0) - (b.taskPriorities[task] ?? 0))
       .map(c => {
         const p = c.taskPriorities[task];
-        return `<span class="col-prio-pill" style="background:${PRIORITY_COLORS[p]}">${esc(c.name)} (${p})</span>`;
+
+        // Priority badge
+        const prioBadge = `<span class="pill-badge">⭐ ${p}</span>`;
+
+        // Skill badge (Formation uses two skills)
+        let skillBadge = '';
+        if (isFormation) {
+          const lvlT = c.skills['Tireur']        ?? 0;
+          const lvlC = c.skills['Corps à corps'] ?? 0;
+          skillBadge = `<span class="pill-badge">${skillIcon('Tireur', 13)}${lvlT} ${skillIcon('Corps à corps', 13)}${lvlC}</span>`;
+        } else if (skill) {
+          const lvl = c.skills[skill] ?? 0;
+          skillBadge = `<span class="pill-badge">${skillIcon(skill, 13)}${lvl}</span>`;
+        }
+
+        return `<span class="col-prio-pill" style="background:${PRIORITY_COLORS[p]}">${esc(c.name)}${prioBadge}${skillBadge}</span>`;
       }).join(' ');
 
     const forbidden = colonists
