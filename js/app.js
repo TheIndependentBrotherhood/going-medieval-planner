@@ -7,6 +7,9 @@
 let _activeTab = 'colonists';
 let _editingId = null; // colonist being edited in modal
 
+// Lock state for combined-method weight sliders (not persisted)
+const _lockedWeights = { desire: false, expertise: false, learning: false };
+
 // ── Icon helpers ──────────────────────────────────────────────────────────────
 
 function skillIcon(skill, size = 18) {
@@ -142,11 +145,18 @@ function renderColonyTab() {
         <h4>Pondération de la méthode combinée</h4>
         ${[['desire','Envies'],['expertise','Expertise'],['learning','Apprentissage']].map(([k,lbl]) => `
           <div class="form-row weight-row">
+            <button class="weight-lock-btn ${_lockedWeights[k] ? 'locked' : ''}"
+              onclick="toggleWeightLock('${k}')" title="${_lockedWeights[k] ? 'Déverrouiller' : 'Verrouiller'}">
+              ${_lockedWeights[k] ? '🔒' : '🔓'}
+            </button>
             <label>${lbl}</label>
             <input type="range" id="weight-${k}" min="0" max="100" value="${c.methodWeights[k]}"
-              class="slider" oninput="updateWeight('${k}', this.value)">
+              class="slider" ${_lockedWeights[k] ? 'disabled' : ''} oninput="updateWeight('${k}', this.value)">
             <span class="weight-val" id="weight-val-${k}">${c.methodWeights[k]}</span>%
           </div>`).join('')}
+        <div class="weight-total" id="weight-total">
+          Total : <span id="weight-total-val">${Object.values(c.methodWeights).reduce((a,b)=>a+b,0)}</span>%
+        </div>
       </div>
 
       <h3>Gestion des envies négatives</h3>
@@ -193,12 +203,93 @@ function saveColonyName() {
   if (val) { Store.updateColony({ name: val }); updateColonyHeader(); }
 }
 
-function updateWeight(key, val) {
-  const el = document.getElementById(`weight-val-${key}`);
-  if (el) el.textContent = val;
+function toggleWeightLock(key) {
+  _lockedWeights[key] = !_lockedWeights[key];
+  // Re-render weight section to reflect lock state
   const c = Store.current();
-  c.methodWeights[key] = Number(val);
-  Store.updateColony({ methodWeights: c.methodWeights });
+  const section = document.getElementById('method-weights-section');
+  if (!section) return;
+  const keys = ['desire', 'expertise', 'learning'];
+  const labels = { desire: 'Envies', expertise: 'Expertise', learning: 'Apprentissage' };
+  section.innerHTML = `
+    <h4>Pondération de la méthode combinée</h4>
+    ${keys.map(k => `
+      <div class="form-row weight-row">
+        <button class="weight-lock-btn ${_lockedWeights[k] ? 'locked' : ''}"
+          onclick="toggleWeightLock('${k}')" title="${_lockedWeights[k] ? 'Déverrouiller' : 'Verrouiller'}">
+          ${_lockedWeights[k] ? '🔒' : '🔓'}
+        </button>
+        <label>${labels[k]}</label>
+        <input type="range" id="weight-${k}" min="0" max="100" value="${c.methodWeights[k]}"
+          class="slider" ${_lockedWeights[k] ? 'disabled' : ''} oninput="updateWeight('${k}', this.value)">
+        <span class="weight-val" id="weight-val-${k}">${c.methodWeights[k]}</span>%
+      </div>`).join('')}
+    <div class="weight-total" id="weight-total">
+      Total : <span id="weight-total-val">${Object.values(c.methodWeights).reduce((a,b)=>a+b,0)}</span>%
+    </div>`;
+}
+
+function updateWeight(key, val) {
+  const keys = ['desire', 'expertise', 'learning'];
+  const c = Store.current();
+  const newVal = Number(val);
+
+  // Compute the budget available for non-locked sliders (excluding the one being dragged)
+  let lockedSum = 0;
+  keys.forEach(k => {
+    if (k !== key && _lockedWeights[k]) lockedSum += c.methodWeights[k];
+  });
+
+  // Clamp dragged value so total doesn't exceed 100
+  const maxVal = Math.max(0, 100 - lockedSum);
+  const clamped = Math.min(newVal, maxVal);
+
+  // Distribute remaining budget among free (non-locked, non-dragged) sliders
+  const remaining = maxVal - clamped;
+  const freeKeys = keys.filter(k => k !== key && !_lockedWeights[k]);
+
+  const newWeights = { ...c.methodWeights };
+  newWeights[key] = clamped;
+
+  if (freeKeys.length > 0) {
+    const currentFreeTotal = freeKeys.reduce((s, k) => s + c.methodWeights[k], 0);
+    if (currentFreeTotal > 0) {
+      // Distribute proportionally to current values
+      let distributed = 0;
+      freeKeys.forEach((k, i) => {
+        if (i === freeKeys.length - 1) {
+          newWeights[k] = remaining - distributed;
+        } else {
+          const share = Math.round(remaining * c.methodWeights[k] / currentFreeTotal);
+          newWeights[k] = share;
+          distributed += share;
+        }
+      });
+    } else {
+      // Distribute equally
+      const share = Math.floor(remaining / freeKeys.length);
+      let remainder = remaining - share * freeKeys.length;
+      freeKeys.forEach(k => {
+        newWeights[k] = share + (remainder-- > 0 ? 1 : 0);
+      });
+    }
+  }
+
+  // Update DOM
+  keys.forEach(k => {
+    const valEl = document.getElementById(`weight-val-${k}`);
+    if (valEl) valEl.textContent = newWeights[k];
+    const sliderEl = document.getElementById(`weight-${k}`);
+    if (sliderEl && k !== key) sliderEl.value = newWeights[k];
+  });
+  const totalEl = document.getElementById('weight-total-val');
+  if (totalEl) totalEl.textContent = Object.values(newWeights).reduce((a,b)=>a+b,0);
+
+  // Sync dragged slider display value in case it was clamped
+  const draggedEl = document.getElementById(`weight-${key}`);
+  if (draggedEl) draggedEl.value = clamped;
+
+  Store.updateColony({ methodWeights: newWeights });
 }
 
 function updateTaskWeight(task, val) {

@@ -708,6 +708,28 @@ a { color: var(--gold); }
 .weight-row label { min-width: 140px; }
 .weight-val { min-width: 30px; color: var(--gold-light); font-weight: 700; }
 
+.weight-lock-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: .9rem;
+  line-height: 1;
+  padding: 2px 5px;
+  color: var(--text-muted);
+  transition: background .15s, border-color .15s;
+}
+.weight-lock-btn:hover { background: var(--surface-hover, rgba(255,255,255,.07)); }
+.weight-lock-btn.locked { border-color: var(--gold-light); color: var(--gold-light); }
+
+.weight-total {
+  margin-top: 6px;
+  font-size: .85rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+.weight-total span { color: var(--gold-light); font-weight: 700; }
+
 /* ── Saves modal ──────────────────────────────────────────────────────────── */
 .saves-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 
