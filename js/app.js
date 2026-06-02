@@ -119,6 +119,25 @@ function deleteSave(id) {
 
 // ── Colony settings tab ───────────────────────────────────────────────────────
 
+function renderMethodWeightsSection(c) {
+  return `
+    <h4>Pondération de la méthode combinée</h4>
+    ${[['desire','Envies'],['expertise','Expertise'],['learning','Apprentissage']].map(([k,lbl]) => `
+      <div class="form-row weight-row">
+        <button class="weight-lock-btn ${_lockedWeights[k] ? 'locked' : ''}"
+          onclick="toggleWeightLock('${k}')" title="${_lockedWeights[k] ? 'Déverrouiller' : 'Verrouiller'}">
+          ${_lockedWeights[k] ? '🔒' : '🔓'}
+        </button>
+        <label>${lbl}</label>
+        <input type="range" id="weight-${k}" min="0" max="100" value="${c.methodWeights[k]}"
+          class="slider" ${_lockedWeights[k] ? 'disabled' : ''} oninput="updateWeight('${k}', this.value)">
+        <span class="weight-val" id="weight-val-${k}">${c.methodWeights[k]}</span>%
+      </div>`).join('')}
+    <div class="weight-total" id="weight-total">
+      Total : <span id="weight-total-val">${Object.values(c.methodWeights).reduce((a,b)=>a+b,0)}</span>%
+    </div>`;
+}
+
 function renderColonyTab() {
   const c = Store.current();
   return `
@@ -142,21 +161,7 @@ function renderColonyTab() {
       </div>
 
       <div id="method-weights-section" ${c.calculationMethod !== 'combined' ? 'class="hidden"' : ''}>
-        <h4>Pondération de la méthode combinée</h4>
-        ${[['desire','Envies'],['expertise','Expertise'],['learning','Apprentissage']].map(([k,lbl]) => `
-          <div class="form-row weight-row">
-            <button class="weight-lock-btn ${_lockedWeights[k] ? 'locked' : ''}"
-              onclick="toggleWeightLock('${k}')" title="${_lockedWeights[k] ? 'Déverrouiller' : 'Verrouiller'}">
-              ${_lockedWeights[k] ? '🔒' : '🔓'}
-            </button>
-            <label>${lbl}</label>
-            <input type="range" id="weight-${k}" min="0" max="100" value="${c.methodWeights[k]}"
-              class="slider" ${_lockedWeights[k] ? 'disabled' : ''} oninput="updateWeight('${k}', this.value)">
-            <span class="weight-val" id="weight-val-${k}">${c.methodWeights[k]}</span>%
-          </div>`).join('')}
-        <div class="weight-total" id="weight-total">
-          Total : <span id="weight-total-val">${Object.values(c.methodWeights).reduce((a,b)=>a+b,0)}</span>%
-        </div>
+        ${renderMethodWeightsSection(c)}
       </div>
 
       <h3>Gestion des envies négatives</h3>
@@ -213,24 +218,7 @@ function toggleWeightLock(key) {
   const c = Store.current();
   const section = document.getElementById('method-weights-section');
   if (!section) return;
-  const keys = ['desire', 'expertise', 'learning'];
-  const labels = { desire: 'Envies', expertise: 'Expertise', learning: 'Apprentissage' };
-  section.innerHTML = `
-    <h4>Pondération de la méthode combinée</h4>
-    ${keys.map(k => `
-      <div class="form-row weight-row">
-        <button class="weight-lock-btn ${_lockedWeights[k] ? 'locked' : ''}"
-          onclick="toggleWeightLock('${k}')" title="${_lockedWeights[k] ? 'Déverrouiller' : 'Verrouiller'}">
-          ${_lockedWeights[k] ? '🔒' : '🔓'}
-        </button>
-        <label>${labels[k]}</label>
-        <input type="range" id="weight-${k}" min="0" max="100" value="${c.methodWeights[k]}"
-          class="slider" ${_lockedWeights[k] ? 'disabled' : ''} oninput="updateWeight('${k}', this.value)">
-        <span class="weight-val" id="weight-val-${k}">${c.methodWeights[k]}</span>%
-      </div>`).join('')}
-    <div class="weight-total" id="weight-total">
-      Total : <span id="weight-total-val">${Object.values(c.methodWeights).reduce((a,b)=>a+b,0)}</span>%
-    </div>`;
+  section.innerHTML = renderMethodWeightsSection(c);
 }
 
 function updateWeight(key, val) {
