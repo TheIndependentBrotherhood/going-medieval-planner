@@ -817,7 +817,7 @@ function renderSchedulesTab() {
 
 function renderPrioritiesTab() {
   const colony    = Store.current();
-  const colonists = colony.colonists;
+  const colonists = colony.colonists.sort((a, b) => a.name.localeCompare(b.name));
 
   if (!colonists.length) return `
     <section class="card">
@@ -876,7 +876,7 @@ function renderPrioritiesTab() {
 
 function renderSummaryTab() {
   const colony    = Store.current();
-  const colonists = colony.colonists;
+  const colonists = colony.colonists.sort((a, b) => a.name.localeCompare(b.name));
 
   if (!colonists.length) return `
     <section class="card">
@@ -957,7 +957,7 @@ function renderSummaryTab() {
 
 function exportTable() {
   const colony    = Store.current();
-  const colonists = colony.colonists;
+  const colonists = colony.colonists.sort((a, b) => a.name.localeCompare(b.name));
   const header    = ['Colon', ...TASKS].join('\t');
   const rows      = colonists.map(c =>
     [c.name, ...TASKS.map(task => c.taskPriorities[task] ?? 3)].join('\t')
